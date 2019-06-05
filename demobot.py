@@ -26,7 +26,10 @@ api: TelegramBotAPI
 
 
 def init_bot():
-    pass
+    global token, api
+
+    token = load_token()
+    api = TelegramBotAPI(token)
 
 
 def load_token() -> str:
