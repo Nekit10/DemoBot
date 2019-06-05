@@ -98,9 +98,11 @@ class TelegramBotAPI:
     def _load_polls() -> dict:
         """Load information about all polls from file"""
 
-        if (os.path.exists(TelegramBotAPI._POLLS_FILENAME)):
+        if os.path.exists(TelegramBotAPI._POLLS_FILENAME):
             with open(TelegramBotAPI._POLLS_FILENAME, 'r') as f:
                 return json.loads(f.read())
+        else:
+            return dict()
 
     def save_polls(self) -> None:
         """Saves information about polls to file"""
