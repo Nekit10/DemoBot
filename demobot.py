@@ -86,11 +86,11 @@ def main_loop() -> None:
         remove = []
         for poll_id in polls.keys():
             poll_options = api.get_poll_result(poll_id)
-            if (time.time() - polls[poll_id]['date']) >= 20 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
+            if (time.time() - polls[poll_id]['date']) >= 12*3600 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
                 api.send_message(polls[poll_id]['chat_id'], 'Выгоняем ' + polls[poll_id]['name'] + ' по результатам опроса!')
                 api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
                 remove += [poll_id]
-            elif (time.time() - polls[poll_id]['date']) >= 40:
+            elif (time.time() - polls[poll_id]['date']) >= 24*3600:
                 remove += [poll_id]
 
         for i in remove:
