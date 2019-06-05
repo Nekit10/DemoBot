@@ -16,7 +16,15 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
-polls: {}
+from botapi import TelegramBotAPI
+
+polls: dict = {}
+token: str
+api: TelegramBotAPI
+
+
+def init_bot():
+    pass
 
 
 def load_token() -> str:
@@ -27,7 +35,7 @@ def check_return_poll_candidates() -> list:
     pass
 
 
-def start_poll() -> str:
+def start_poll(chat_id: int, name: str, user_id: int) -> str:
     pass
 
 
