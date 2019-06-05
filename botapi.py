@@ -109,7 +109,9 @@ class TelegramBotAPI:
             f.write(json.dumps(self.polls))
 
     def get_poll_result(self, poll_id: int) -> dict:
-        pass
+        self._update_polls(self._get_new_updates_without_offset()['result'])
+
+        return self.polls[poll_id]
 
     def _update_polls(self, updates: list) -> None:
         """Update options of every poll that was updated"""
