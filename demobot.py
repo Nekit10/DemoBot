@@ -52,3 +52,5 @@ def main_loop() -> None:
                 api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
             elif polls[poll_id]['date'] >= 24*3600:
                 del polls[poll_id]
+
+        api.save_polls()
