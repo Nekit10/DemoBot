@@ -38,6 +38,8 @@ def load_token() -> str:
 
 
 def check_return_poll_candidates() -> list:
+    global api
+
     updates = api.get_new_updates()['result']
     candidates = []
 
@@ -56,11 +58,24 @@ def check_return_poll_candidates() -> list:
     return candidates
 
 
-def start_poll(chat_id: int, name: str, user_id: int) -> str:
-    pass
+def start_poll(chat_id: int, name: str, user_id: int) -> None:
+    global polls, api
+
+    response = api.start_poll(chat_id, 'Кикнуть ' + name + '?', ['Да', 'Нет'])
+
+    poll_id = int(response['result']['poll']['id'])
+
+    poll_info = dict()
+    poll_info['date'] = response['result']['date']
+    poll_info['user_id'] = user_id
+    poll_info['name'] = name
+
+    polls[poll_id] = poll_info
 
 
 def main_loop() -> None:
+    global polls, api
+
     while True:
         candidates = check_return_poll_candidates()
         for candidate in candidates:
