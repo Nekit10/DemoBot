@@ -17,6 +17,7 @@
 #    Copyright (c) 2019 Nikita Serba
 
 import json
+import os
 
 import requests
 
@@ -44,7 +45,7 @@ class TelegramBotAPI:
 
         self.token = token
         self.url = 'https://api.telegram.org/bot' + token
-        self.polls = self.load_polls()
+        self.polls = self._load_polls()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         response = json.loads(requests.get('{}/sendPoll?chat_id={}&question={}%options={}'.format(
@@ -97,11 +98,12 @@ class TelegramBotAPI:
         return self.send_message(chat_id, 'Error: ' + str(e))
 
     @staticmethod
-    def load_polls() -> dict:
+    def _load_polls() -> dict:
         """Load information about all polls from file"""
 
-        with open(TelegramBotAPI._POLLS_FILENAME, 'r') as f:
-            return json.loads(f.read())
+        if (os.path.exists(TelegramBotAPI._POLLS_FILENAME)):
+            with open(TelegramBotAPI._POLLS_FILENAME, 'r') as f:
+                return json.loads(f.read())
 
     def save_polls(self) -> None:
         """Saves information about polls to file"""
