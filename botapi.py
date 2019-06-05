@@ -48,7 +48,7 @@ class TelegramBotAPI:
         self.polls = self._load_polls()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
-        response = requests.get('{}/sendPoll?chat_id={}&question={}%options={}'.format(
+        response = requests.get('{}/sendPoll?chat_id={}&question={}&options={}'.format(
             self.url,
             str(chat_id),
             question,
