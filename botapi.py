@@ -74,7 +74,8 @@ class TelegramBotAPI:
     def get_new_updates(self) -> dict:
         response = requests.get('{}/getUpdates?offset={}'.format(self.url, str(self.offset))).json()
 
-        self.offset = response['result'][-1]['update_id'] + 1
+        if len(response['result']) > 0:
+            self.offset = response['result'][-1]['update_id'] + 1
 
         if not response['ok']:
             raise TelegramBotException(response['description'])
