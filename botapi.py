@@ -52,7 +52,7 @@ class TelegramBotAPI:
             self.url,
             str(chat_id),
             question,
-            '[' + ','.join(answers) + ']')).json()
+            '["' + '","'.join(answers) + '"]')).json()
 
         if not response['ok']:
             raise TelegramBotException(response['description'])
