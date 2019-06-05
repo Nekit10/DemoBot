@@ -114,4 +114,8 @@ class TelegramBotAPI:
     def _update_polls(self, updates: list) -> None:
         """Update options of every poll that was updated"""
 
-        pass
+        for update in updates:
+            if 'poll' in update.keys():
+                poll_id = int(update['poll']['id'])
+                poll_options = update['poll']['options']
+                self.polls[poll_id] = poll_options
