@@ -38,7 +38,22 @@ def load_token() -> str:
 
 
 def check_return_poll_candidates() -> list:
-    pass
+    updates = api.get_new_updates()['result']
+    candidates = []
+
+    for update in updates:
+        try:
+            if '@chatdemocratic_bot' in updates['message'] and 'reply_to_message' in updates['message'].keys():
+                result = dict()
+                result['chat_id'] = updates['message']['reply_to_message']['chat']['id']
+                result['name'] = updates['message']['reply_to_message']['from']['first_name'] + updates['message']['reply_to_message']['from']['last_name']
+                result['user_id'] = updates['message']['reply_to_message']['from']['id']
+
+                candidates += [result]
+        except (NameError, IndexError):
+            pass
+
+    return candidates
 
 
 def start_poll(chat_id: int, name: str, user_id: int) -> str:
