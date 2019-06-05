@@ -18,6 +18,12 @@
 
 import demobot
 
+VERSION = '1.0.0-alpha.1'
+
 if __name__ == '__main__':
-    demobot.init_bot()
-    demobot.main_loop()
+    while True:
+        try:
+            demobot.init_bot()
+            demobot.main_loop()
+        except Exception as e:
+            print(str(e))
