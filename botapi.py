@@ -54,7 +54,15 @@ class TelegramBotAPI:
         return response
 
     def send_message(self, chat_id: int, msg: str) -> dict:
-        pass
+        response = json.loads(requests.get('{}/sendMessage?chat_id={}&text={}'.format(
+            self.url,
+            str(chat_id),
+            msg)))
+
+        if not response['ok']:
+            raise TelegramBotException(response['description'])
+
+        return response
 
     def get_new_updates(self) -> dict:
         pass
