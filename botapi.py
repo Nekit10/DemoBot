@@ -76,4 +76,4 @@ class TelegramBotAPI:
         return response
 
     def send_error_message(self, chat_id: int, e: Exception) -> dict:
-        pass
+        return self.send_message(chat_id, 'Error: ' + str(e))
