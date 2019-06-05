@@ -27,10 +27,20 @@ class TelegramBotAPI:
         Create instance of TelegramBotAPI
 
         Params:
-        token - your's bot token. You can get it from @BotFather in Telegram
+        token: str - your's bot token. You can get it from @BotFather in Telegram
         """
 
         self.token = token
         self.url = 'https://api.telegram.org/bot' + token + '/'
 
+    def start_poll(self, chat_id: int, question: str, answers: list) -> None:
+        pass
 
+    def send_message(self, chat_id: int, msg: str) -> None:
+        pass
+
+    def get_new_updates(self) -> None:
+        pass
+
+    def send_error_message(self, chat_id: int, e: Exception):
+        pass
