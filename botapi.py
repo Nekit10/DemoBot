@@ -33,14 +33,14 @@ class TelegramBotAPI:
         self.token = token
         self.url = 'https://api.telegram.org/bot' + token + '/'
 
-    def start_poll(self, chat_id: int, question: str, answers: list) -> None:
+    def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         pass
 
-    def send_message(self, chat_id: int, msg: str) -> None:
+    def send_message(self, chat_id: int, msg: str) -> dict:
         pass
 
-    def get_new_updates(self) -> None:
+    def get_new_updates(self) -> dict:
         pass
 
-    def send_error_message(self, chat_id: int, e: Exception):
+    def send_error_message(self, chat_id: int, e: Exception) -> dict:
         pass
