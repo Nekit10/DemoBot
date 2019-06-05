@@ -32,6 +32,7 @@ class TelegramBotAPI:
     offset: int = 934596997
 
     polls: dict
+    _POLLS_FILENAME: str = "polls.json"
 
     def __init__(self, token: str):
         """
@@ -98,12 +99,14 @@ class TelegramBotAPI:
     def load_polls() -> dict:
         """Load information about all polls from file"""
 
-        pass
+        with open(TelegramBotAPI._POLLS_FILENAME) as f:
+            return json.loads(f.read())
 
     def save_polls(self) -> None:
         """Saves information about polls to file"""
 
-        pass
+        with open(TelegramBotAPI._POLLS_FILENAME) as f:
+            f.write(json.dumps(self.polls))
 
     def get_poll_result(self, poll_id: int) -> dict:
         pass
