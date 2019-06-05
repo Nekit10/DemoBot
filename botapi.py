@@ -87,6 +87,7 @@ class TelegramBotAPI:
     def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> dict:
         response = requests.get('{}/kickChatMember?chat_id={}&user_id={}&until_date={}'.format(
             self.url,
+            str(chat_id),
             str(user_id),
             str(until_date))).json()
 
