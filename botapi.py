@@ -29,6 +29,7 @@ class TelegramBotAPI:
     """A set if function that communicate with official Telegram bot api"""
     token: str
     url: str
+    offset: int = 934596997
 
     def __init__(self, token: str):
         """
@@ -65,7 +66,14 @@ class TelegramBotAPI:
         return response
 
     def get_new_updates(self) -> dict:
-        pass
+        response = json.loads(requests.get('{}/getUpdates?offset='.format(self.url, str(self.offset))))
+
+        self.offset = response['result'][-1]['update_id'] + 1
+
+        if not response['ok']:
+            raise TelegramBotException(response['description'])
+
+        return response
 
     def send_error_message(self, chat_id: int, e: Exception) -> dict:
         pass
