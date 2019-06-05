@@ -48,11 +48,11 @@ class TelegramBotAPI:
         self.polls = self._load_polls()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
-        response = json.loads(requests.get('{}/sendPoll?chat_id={}&question={}%options={}'.format(
+        response = requests.get('{}/sendPoll?chat_id={}&question={}%options={}'.format(
             self.url,
             str(chat_id),
             question,
-            '[' + ','.join(answers) + ']')).json())
+            '[' + ','.join(answers) + ']')).json()
 
         if not response['ok']:
             raise TelegramBotException(response['description'])
@@ -64,10 +64,7 @@ class TelegramBotAPI:
         return response
 
     def send_message(self, chat_id: int, msg: str) -> dict:
-        response = json.loads(requests.get('{}/sendMessage?chat_id={}&text={}'.format(
-            self.url,
-            str(chat_id),
-            msg)))
+        response = requests.get('{}/sendMessage?chat_id={}&text={}'.format(self.url, str(chat_id), msg)).json()
 
         if not response['ok']:
             raise TelegramBotException(response['description'])
@@ -75,7 +72,7 @@ class TelegramBotAPI:
         return response
 
     def get_new_updates(self) -> dict:
-        response = json.loads(requests.get('{}/getUpdates?offset={}'.format(self.url, str(self.offset))).json())
+        response = requests.get('{}/getUpdates?offset={}'.format(self.url, str(self.offset))).json()
 
         self.offset = response['result'][-1]['update_id'] + 1
 
@@ -87,7 +84,7 @@ class TelegramBotAPI:
         return response
 
     def _get_new_updates_without_offset(self) -> dict:
-        response = json.loads(requests.get('{}/getUpdates'.format(self.url)))
+        response = requests.get('{}/getUpdates'.format(self.url)).json()
 
         if not response['ok']:
             raise TelegramBotException(response['description'])
