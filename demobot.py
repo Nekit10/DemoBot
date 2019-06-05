@@ -16,6 +16,8 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
+import json
+
 from botapi import TelegramBotAPI
 
 polls: dict = {}
@@ -28,7 +30,8 @@ def init_bot():
 
 
 def load_token() -> str:
-    pass
+    with open('config.json', 'r') as f:
+        return json.loads(f.read())['token']
 
 
 def check_return_poll_candidates() -> list:
