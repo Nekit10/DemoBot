@@ -66,7 +66,7 @@ class TelegramBotAPI:
         return response
 
     def get_new_updates(self) -> dict:
-        response = json.loads(requests.get('{}/getUpdates?offset='.format(self.url, str(self.offset))))
+        response = json.loads(requests.get('{}/getUpdates?offset={}'.format(self.url, str(self.offset))))
 
         self.offset = response['result'][-1]['update_id'] + 1
 
