@@ -23,7 +23,7 @@ def load_token() -> str:
     pass
 
 
-def check_return_poll_candidates() -> []:
+def check_return_poll_candidates() -> list:
     pass
 
 
