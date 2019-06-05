@@ -57,7 +57,8 @@ class TelegramBotAPI:
             raise TelegramBotException(response['description'])
 
         poll_id = int(response['result']['poll']['id'])
-        self.polls[poll_id] = []
+        empty_poll_options = response['result']['poll']['options']
+        self.polls[poll_id] = empty_poll_options
 
         return response
 
