@@ -84,6 +84,17 @@ class TelegramBotAPI:
 
         return response
 
+    def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> dict:
+        response = requests.get('{}/kickChatMember?chat_id={}&user_id={}&until_date={}'.format(
+            self.url,
+            str(user_id),
+            str(until_date))).json()
+
+        if not response['ok']:
+            raise TelegramBotException(response['description'])
+
+        return response
+
     def _get_new_updates_without_offset(self) -> dict:
         response = requests.get('{}/getUpdates'.format(self.url)).json()
 
