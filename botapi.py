@@ -31,6 +31,8 @@ class TelegramBotAPI:
     url: str
     offset: int = 934596997
 
+    polls: dict
+
     def __init__(self, token: str):
         """
         Create instance of TelegramBotAPI
@@ -41,6 +43,7 @@ class TelegramBotAPI:
 
         self.token = token
         self.url = 'https://api.telegram.org/bot' + token
+        self.polls = self.load_polls()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         response = json.loads(requests.get('{}/sendPoll?chat_id={}&question={}%options={}'.format(
@@ -51,6 +54,9 @@ class TelegramBotAPI:
 
         if not response['ok']:
             raise TelegramBotException(response['description'])
+
+        poll_id = int(response['result']['poll']['id'])
+        self.polls[poll_id] = []
 
         return response
 
@@ -73,7 +79,36 @@ class TelegramBotAPI:
         if not response['ok']:
             raise TelegramBotException(response['description'])
 
+        self._update_polls(response['result'])
+
+        return response
+
+    def _get_new_updates_without_offset(self) -> dict:
+        response = json.loads(requests.get('{}/getUpdates'.format(self.url)))
+
+        if not response['ok']:
+            raise TelegramBotException(response['description'])
+
         return response
 
     def send_error_message(self, chat_id: int, e: Exception) -> dict:
         return self.send_message(chat_id, 'Error: ' + str(e))
+
+    @staticmethod
+    def load_polls() -> dict:
+        """Load information about all polls from file"""
+
+        pass
+
+    def save_polls(self) -> None:
+        """Saves information about polls to file"""
+
+        pass
+
+    def get_poll_result(self, poll_id: int) -> dict:
+        pass
+
+    def _update_polls(self, updates: list) -> None:
+        """Update options of every poll that was updated"""
+
+        pass
