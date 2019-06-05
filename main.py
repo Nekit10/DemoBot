@@ -19,4 +19,5 @@
 import demobot
 
 if __name__ == '__main__':
+    demobot.init_bot()
     demobot.main_loop()
