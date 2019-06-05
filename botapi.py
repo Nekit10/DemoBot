@@ -32,7 +32,7 @@ class TelegramBotAPI:
     offset: int = 934596997
 
     polls: dict
-    _POLLS_FILENAME: str = "polls.json"
+    _POLLS_FILENAME: str = 'polls.json'
 
     def __init__(self, token: str):
         """
