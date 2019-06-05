@@ -40,4 +40,15 @@ def start_poll(chat_id: int, name: str, user_id: int) -> str:
 
 
 def main_loop() -> None:
-    pass
+    while True:
+        candidates = check_return_poll_candidates()
+        for candidate in candidates:
+            start_poll(candidate['chat_id'], candidate['name'], candidate['user_id'])
+
+        for poll_id in polls.keys():
+            poll_options = api.get_poll_result(poll_id)
+            if polls[poll_id]['date'] >= 12*3600 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
+                api.send_message(polls[[poll_id]['chat_id']], 'Выгоняем ' + polls[poll_id]['name'] + ' по результатам опроса!')
+                api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
+            elif polls[poll_id]['date'] >= 24*3600:
+                del polls[poll_id]
