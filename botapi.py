@@ -16,6 +16,14 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
+import json
+
+import requests
+
+
+class TelegramBotException(Exception):
+    pass
+
 
 class TelegramBotAPI:
     """A set if function that communicate with official Telegram bot api"""
@@ -31,10 +39,19 @@ class TelegramBotAPI:
         """
 
         self.token = token
-        self.url = 'https://api.telegram.org/bot' + token + '/'
+        self.url = 'https://api.telegram.org/bot' + token
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
-        pass
+        response = json.loads(requests.get('{}/sendPoll?chat_id={}&question={}%options={}'.format(
+            self.url,
+            str(chat_id),
+            question,
+            '[' + ','.join(answers) + ']')).json())
+
+        if not response['ok']:
+            raise TelegramBotException(response['description'])
+
+        return response
 
     def send_message(self, chat_id: int, msg: str) -> dict:
         pass
