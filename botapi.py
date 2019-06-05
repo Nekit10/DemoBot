@@ -100,13 +100,13 @@ class TelegramBotAPI:
     def load_polls() -> dict:
         """Load information about all polls from file"""
 
-        with open(TelegramBotAPI._POLLS_FILENAME) as f:
+        with open(TelegramBotAPI._POLLS_FILENAME, 'r') as f:
             return json.loads(f.read())
 
     def save_polls(self) -> None:
         """Saves information about polls to file"""
 
-        with open(TelegramBotAPI._POLLS_FILENAME) as f:
+        with open(TelegramBotAPI._POLLS_FILENAME, 'w') as f:
             f.write(json.dumps(self.polls))
 
     def get_poll_result(self, poll_id: int) -> dict:
