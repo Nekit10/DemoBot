@@ -16,10 +16,32 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
+import logging
+import datetime
+from logging.handlers import RotatingFileHandler
+
 import demobot
 
 VERSION = '1.0.0-alpha.1'
 DEBUG_MODE = True
+
+logger = logging.getLogger('dembot_logger')
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+
+# Logging to console
+std_handler = logging.StreamHandler()
+std_handler.setLevel(logging.DEBUG)
+std_handler.setFormatter(formatter)
+
+# Latest debug log
+latest_handler = RotatingFileHandler('latest.log', mode='a', maxBytes=20*1024*2014, backupCount=0, encoding=None, delay=0)
+latest_handler.setLevel(logging.DEBUG)
+latest_handler.setFormatter(formatter)
+
+# Old info log
+old_handler = RotatingFileHandler(datetime.datetime.now().strftime("%Y.%m.%d_%H-%M-%S") + '.log', mode='w', maxBytes=5*1024*2014, backupCount=5, encoding=None, delay=0)
+old_handler.setLevel(logging.INFO)
+old_handler.setFormatter(formatter)
 
 if __name__ == '__main__':
     while True:
