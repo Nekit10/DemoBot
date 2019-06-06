@@ -47,7 +47,7 @@ def check_return_poll_candidates() -> list:
 
     for update in updates:
         try:
-            if '@chatdemocratic_bot' in update['message']['text'] and 'reply_to_message' in update['message'].keys():
+            if config['bot_username'] in update['message']['text'] and 'reply_to_message' in update['message'].keys():
                 result = dict()
                 result['chat_id'] = update['message']['reply_to_message']['chat']['id']
                 result['name'] = update['message']['reply_to_message']['from']['first_name'] + ' ' + update['message']['reply_to_message']['from']['last_name']

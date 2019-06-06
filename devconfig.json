@@ -1,3 +1,4 @@
 {
-  "token": "Put your's dev bot token here"
+  "token": "Put your's bot dev token here",
+  "bot_username": "@dev_democraticbot"
 }
