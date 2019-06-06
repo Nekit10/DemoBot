@@ -43,10 +43,19 @@ old_handler = RotatingFileHandler(datetime.datetime.now().strftime("%Y.%m.%d_%H-
 old_handler.setLevel(logging.INFO)
 old_handler.setFormatter(formatter)
 
+
+def log_server_info():
+    pass
+
+
 if __name__ == '__main__':
+    logging.info('Starting bot')
+    log_server_info()
+    demobot.init_bot(DEBUG_MODE)
     while True:
         try:
-            demobot.init_bot(DEBUG_MODE)
+            logger.debug('Running main loop from beginning')
             demobot.main_loop()
         except Exception as e:
+            logger.error('Exception (Ignored)! ' + str(e))
             print(str(e))
