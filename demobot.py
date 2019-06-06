@@ -22,20 +22,21 @@ import time
 from botapi import TelegramBotAPI
 
 polls: dict = {}
-token: str
+config: dict = {}
 api: TelegramBotAPI
 
 
-def init_bot():
-    global token, api
+def init_bot(debug: bool = False):
+    global api, config
 
-    token = load_token()
-    api = TelegramBotAPI(token)
+    config = load_config(debug)
+    api = TelegramBotAPI(config['token'])
 
 
-def load_token() -> str:
-    with open('config.json', 'r') as f:
-        return json.loads(f.read())['token']
+def load_config(debug: bool = False) -> dict:
+    config_filename = 'config.json' if not debug else 'devconfig.json'
+    with open(config_filename, 'r') as f:
+        return json.loads(f.read())
 
 
 def check_return_poll_candidates() -> list:
