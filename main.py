@@ -19,11 +19,12 @@
 import demobot
 
 VERSION = '1.0.0-alpha.1'
+DEBUG_MODE = True
 
 if __name__ == '__main__':
     while True:
         try:
-            demobot.init_bot()
+            demobot.init_bot(DEBUG_MODE)
             demobot.main_loop()
         except Exception as e:
             print(str(e))

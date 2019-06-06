@@ -27,7 +27,7 @@ class TelegramBotAPITests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open('../config.json', 'r') as f:
+        with open('../devconfig.json', 'r') as f:
             token = json.loads(f.read())['token']
         TelegramBotAPI._POLLS_FILENAME = '../polls.json'
         cls.botapi = TelegramBotAPI(token)
