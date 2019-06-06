@@ -1,6 +1,6 @@
 # Democratic Bot
-Vote kick bot for Telegram.
-@@chatdemocratic_bot
+Vote kick bot for Telegram.<br>
+@chatdemocratic_bot
 ## Download latest version's source code
 You can download source code of DemoBot v1.0.0-alpha.1 [here](https://github.com/Nekit10/DemoBot/releases/tag/v1.0.0-alpha.1)
 ## Features
