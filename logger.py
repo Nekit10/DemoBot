@@ -18,6 +18,7 @@
 
 import datetime
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
 TRACE_LOGLEVEL = 5
@@ -37,8 +38,18 @@ class AppLogger(logging.getLoggerClass()):
 logger: AppLogger
 
 
+def clean_old_logs():
+    log_dir = 'logs\\'
+    files = [f for f in os.listdir(log_dir) if os.path.isfile(os.path.join(log_dir, f)) and f.endswith('.log') and not f.startswith('latest')]
+    if len(files) > 4:
+        for log_file in files[4:]:
+            os.remove(os.path.join(log_dir, log_file))
+
+
 def init():
     global logger
+
+    clean_old_logs()
 
     logger = AppLogger(__name__)
     logger.setLevel(TRACE_LOGLEVEL)
@@ -50,7 +61,7 @@ def init():
     std_handler.setFormatter(formatter)
 
     # Latest debug log
-    latest_handler = RotatingFileHandler('logs\latest.log', mode='a', maxBytes=20 * 1024 * 2014, backupCount=0,
+    latest_handler = RotatingFileHandler('logs\\latest.log', mode='a', maxBytes=20 * 1024 * 2014, backupCount=0,
                                          encoding=None, delay=0)
     latest_handler.setLevel(logging.DEBUG)
     latest_handler.setFormatter(formatter)
