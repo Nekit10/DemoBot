@@ -18,44 +18,37 @@
 
 import logging
 import datetime
+import platform
 from logging.handlers import RotatingFileHandler
 
 import demobot
+import logger
 
 VERSION = '1.0.0-alpha.1'
 DEBUG_MODE = True
 
-logger = logging.getLogger('dembot_logger')
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-
-# Logging to console
-std_handler = logging.StreamHandler()
-std_handler.setLevel(logging.DEBUG)
-std_handler.setFormatter(formatter)
-
-# Latest debug log
-latest_handler = RotatingFileHandler('latest.log', mode='a', maxBytes=20*1024*2014, backupCount=0, encoding=None, delay=0)
-latest_handler.setLevel(logging.DEBUG)
-latest_handler.setFormatter(formatter)
-
-# Old info log
-old_handler = RotatingFileHandler(datetime.datetime.now().strftime("%Y.%m.%d_%H-%M-%S") + '.log', mode='w', maxBytes=5*1024*2014, backupCount=5, encoding=None, delay=0)
-old_handler.setLevel(logging.INFO)
-old_handler.setFormatter(formatter)
+logger.init()
 
 
 def log_server_info():
-    pass
+    logger.logger.info('\nPC Specs: ' +
+                 '\nMachine: ' + platform.machine() +
+                 '\nOS Version: ' + platform.version() +
+                 '\nPlatform: ' + platform.platform() +
+                 '\nUname: ' + ' '.join(platform.uname()) +
+                 '\nSystem: ' + platform.system() +
+                 '\nCPU: ' + platform.processor() +
+                 '\nPython version: ' + platform.python_version())
 
 
 if __name__ == '__main__':
-    logging.info('Starting bot')
+    logger.logger.info('Starting bot')
     log_server_info()
     demobot.init_bot(DEBUG_MODE)
     while True:
         try:
-            logger.debug('Running main loop from beginning')
+            logger.logger.debug('Running main loop from beginning')
             demobot.main_loop()
         except Exception as e:
-            logger.error('Exception (Ignored)! ' + str(e))
+            logger.logger.warning('Exception (Ignored)! ' + str(e))
             print(str(e))

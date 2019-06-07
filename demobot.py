@@ -19,6 +19,7 @@
 import json
 import time
 
+import logger
 from botapi import TelegramBotAPI
 
 polls: dict = {}
@@ -28,13 +29,17 @@ api: TelegramBotAPI
 
 def init_bot(debug: bool = False):
     global api, config
+    logger.logger.info('Begging init of bot')
 
+    logger.logger.debug('Loading config file (debug = ' + 'True)' if debug else 'False)')
     config = load_config(debug)
+    logger.logger.debug('Crating instance of TelegramBotAPI in bot init')
     api = TelegramBotAPI(config['token'])
 
 
 def load_config(debug: bool = False) -> dict:
     config_filename = 'config.json' if not debug else 'devconfig.json'
+    logger.logger.debug('Using ' + config_filename + ' as config file')
     with open(config_filename, 'r') as f:
         return json.loads(f.read())
 
@@ -42,20 +47,29 @@ def load_config(debug: bool = False) -> dict:
 def check_return_poll_candidates() -> list:
     global api
 
+    logger.logger.trace('Checking poll candidates')
+
     updates = api.get_new_updates()['result']
     candidates = []
 
+    logger.logger.trace('Got ' + str(len(updates)) + ' updates')
+
     for update in updates:
         try:
+            logger.logger.trace('Checking new update! (is mention? ' + str(config['bot_username'] in update['message']['text']) + '; is reply? ' + str('reply_to_message' in update['message'].keys()) + ')\n' + str(update))
             if config['bot_username'] in update['message']['text'] and 'reply_to_message' in update['message'].keys():
                 result = dict()
                 result['chat_id'] = update['message']['reply_to_message']['chat']['id']
                 result['name'] = update['message']['reply_to_message']['from']['first_name'] + ' ' + update['message']['reply_to_message']['from']['last_name']
                 result['user_id'] = update['message']['reply_to_message']['from']['id']
 
+                logger.logger.info('Found kick candidate in chat #' + str(result['chat_id']) + ', with name ' + result['name'] + '(' + str(result['user_id']) + ')')
+
                 candidates += [result]
         except (NameError, IndexError, KeyError):
-            pass
+            logger.logger.trace('Ignored name exception in checking poll candidates: ' + str(e))
+
+    logger.logger.trace('Returning ' + str(len(candidates)) + ' kick candidates')
 
     return candidates
 
@@ -78,6 +92,7 @@ def start_poll(chat_id: int, name: str, user_id: int) -> None:
 
 def main_loop() -> None:
     global polls, api
+    logger.logger.info('Started main loop')
 
     while True:
         candidates = check_return_poll_candidates()
@@ -86,12 +101,16 @@ def main_loop() -> None:
 
         remove = []
         for poll_id in polls.keys():
+            logger.logger.trace('Checking poll with id ' + str(poll_id))
             poll_options = api.get_poll_result(poll_id)
             if (time.time() - polls[poll_id]['date']) >= 12*3600 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
+                logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' + str(polls[poll_id]['chat_id']))
                 api.send_message(polls[poll_id]['chat_id'], 'Выгоняем ' + polls[poll_id]['name'] + ' по результатам опроса!')
+                logger.logger.debug('Kick message already sent')
                 api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
                 remove += [poll_id]
             elif (time.time() - polls[poll_id]['date']) >= 24*3600:
+                logger.logger.info('Closing poll with id ' + str(poll_id) + ' after 24 hours')
                 remove += [poll_id]
 
         for i in remove:
