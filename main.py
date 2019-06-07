@@ -16,10 +16,7 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
-import logging
-import datetime
 import platform
-from logging.handlers import RotatingFileHandler
 
 import demobot
 import logger
