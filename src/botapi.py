@@ -21,7 +21,7 @@ import os
 
 import requests
 
-import logger
+from src import logger
 
 
 class TelegramBotException(Exception):

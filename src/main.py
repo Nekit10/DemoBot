@@ -18,8 +18,7 @@
 
 import platform
 
-import demobot
-import logger
+from src import demobot, logger
 
 VERSION = '1.0.0-alpha.1'
 DEBUG_MODE = True

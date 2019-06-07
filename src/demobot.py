@@ -19,8 +19,8 @@
 import json
 import time
 
-import logger
-from botapi import TelegramBotAPI
+from src import logger
+from src.botapi import TelegramBotAPI
 
 polls: dict = {}
 config: dict = {}
