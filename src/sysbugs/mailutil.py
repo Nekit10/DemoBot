@@ -20,6 +20,8 @@ import json
 from smtplib import SMTP
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 
 def _parse_mail_info():
@@ -27,7 +29,7 @@ def _parse_mail_info():
         return json.loads(f.read())
 
 
-def send_email(to: str, re: str, msg: str):
+def send_email(to: str, re: str, msg_: str, files: list):
     mail_info = _parse_mail_info()
 
     s = SMTP(host='smtp.gmail.com', port=587)
@@ -39,7 +41,21 @@ def send_email(to: str, re: str, msg: str):
     msg['To'] = to
     msg['Subject'] = re
 
-    msg.attach(MIMEText(msg, 'plain'))
+    msg.attach(MIMEText(msg_, 'plain'))
+
+    for file_lst in files:
+        filename = file_lst[0]
+        attachment = open(file_lst[1], 'rb')
+
+        p = MIMEBase('application', 'octet-stream')
+
+        p.set_payload(attachment.read())
+
+        encoders.encode_base64(p)
+
+        p.add_header('Content-Disposition', "attachment; filename= {}".format(filename))
+
+        msg.attach(p)
 
     s.send_message(msg)
 
