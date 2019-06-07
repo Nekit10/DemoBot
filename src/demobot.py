@@ -66,7 +66,7 @@ def check_return_poll_candidates() -> list:
                 logger.logger.info('Found kick candidate in chat #' + str(result['chat_id']) + ', with name ' + result['name'] + '(' + str(result['user_id']) + ')')
 
                 candidates += [result]
-        except (NameError, IndexError, KeyError):
+        except (NameError, IndexError, KeyError) as e:
             logger.logger.trace('Ignored name exception in checking poll candidates: ' + str(e))
 
     logger.logger.trace('Returning ' + str(len(candidates)) + ' kick candidates')
