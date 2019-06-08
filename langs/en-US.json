@@ -10,6 +10,7 @@
     "give_contact_info": "Enter please your email, phone or nickname in Telegram or Discord. We will tell you about results of bug-report consideration",
     "bug_report_send": "Bug report was successfully sent",
     "lang_choose": "Choose your language: ",
-    "lang_notify": "Changed language to English (US)"
+    "lang_notify": "Changed language to English (US)",
+    "version_info": "Вышла новая версия Демократического бота - 1.0.0-alpha.2!\nНововведения:\n* исправлены багы и улучшена производительность\n* добавлено еще багов\n* нашли баг? Сообщите о нем с помощью команды /report@chatdemocratic_bot \n* поддержка нескольких языков\nИтого проект вырос на 366 строчек кода (теперь их 564)!"
   }
 }

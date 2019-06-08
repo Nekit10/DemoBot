@@ -44,8 +44,11 @@ class TelegramBotAPI:
     command_listeners = {}
     callback_query_listeners = {}
 
+    chats = []
+
     polls: dict
     _POLLS_FILENAME: str = 'polls.json'
+    _CHATS_FILENAME: str = 'chats.json'
 
     def __init__(self, token: str, debug: bool):
         """
@@ -61,6 +64,7 @@ class TelegramBotAPI:
         self.token = token
         self.url = 'https://api.telegram.org/bot' + token
         self.polls = self._load_polls()
+        self.chats = self._load_chats()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         logger.logger.info('Starting poll (' + question + ') -> [' + ', '.join(answers) + ']; in chat #' + str(chat_id))
@@ -120,6 +124,7 @@ class TelegramBotAPI:
         self._update_polls(response['result'])
         self._check_for_commands(response['result'])
         self._check_for_inline(response['result'])
+        self._check_for_new_chats(response['result'])
 
         return response
 
@@ -265,3 +270,26 @@ class TelegramBotAPI:
                         self.callback_query_listeners[msg_id](update['callback_query']['message']['chat']['id'], update['callback_query']['data'])
             except (NameError, IndexError, KeyError) as e:
                 logger.logger.trace('Ignored name exception in checking callback_query command: ' + str(e))
+
+    def _load_chats(self) -> list:
+        chats_full_path = os.path.join(os.path.dirname(__file__), '..\\' + self._CHATS_FILENAME)
+
+        if os.path.isfile(chats_full_path):
+            with open(chats_full_path, 'r') as f:
+                return json.loads(f.read())
+
+    def _save_chats(self):
+        chats_full_path = os.path.join(os.path.dirname(__file__), '..\\' + self._CHATS_FILENAME)
+
+        with open(chats_full_path, 'w') as f:
+            f.write(json.dumps(self.chats))
+
+    def _check_for_new_chats(self, updates: list):
+        for update in updates:
+            try:
+                chat_id = update['message']['chat']['id']
+                if chat_id not in self.chats:
+                    self.chats += [chat_id]
+            except (NameError, IndexError, KeyError) as e:
+                logger.logger.trace('Ignored name exception in for new chats: ' + str(e))
+        self._save_chats()

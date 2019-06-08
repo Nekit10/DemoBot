@@ -17,10 +17,12 @@
 #    Copyright (c) 2019 Nikita Serba
 
 import platform
+import sys
 
 from src import demobot, logger
+from src.botapi import TelegramBotAPI
 from src.sysbugs.bugtrackerapi import report_exception
-from src.syslang.langapi import load_chat_langs
+from src.syslang.langapi import load_chat_langs, msg_version_info
 
 VERSION = '1.0.0-alpha.1'
 DEBUG_MODE = True
@@ -42,8 +44,16 @@ def log_server_info():
 
 if __name__ == '__main__':
     logger.logger.info('Starting bot')
+
     log_server_info()
     demobot.init_bot(DEBUG_MODE)
+
+    if len(sys.argv) and sys.argv[1] == '--version-notify':
+        api = TelegramBotAPI(demobot.config['token'], DEBUG_MODE)
+        for chat in api.chats:
+            api.send_message(chat, msg_version_info(chat))
+        exit(0)
+
     while True:
         try:
             logger.logger.debug('Running main loop from beginning')

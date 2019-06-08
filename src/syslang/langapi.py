@@ -112,3 +112,7 @@ def msg_lang_choose(chat_id) -> str:
 
 def msg_lang_notify(chat_id) -> str:
     return _get_trans_str(chat_id, 'lang_notify')
+
+
+def msg_version_info(chat_id) -> str:
+    return _get_trans_str(chat_id, 'version_info')
