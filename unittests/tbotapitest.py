@@ -19,7 +19,25 @@
 import unittest
 import json
 
-from botapi import TelegramBotAPI, TelegramBotException
+from src import logger
+from src.botapi import TelegramBotAPI, TelegramBotException
+
+
+class LoggerFake:
+    def info(self, *args, **kwargs):
+        pass
+
+    def debug(self, *args, **kwargs):
+        pass
+
+    def trace(self, *args, **kwargs):
+        pass
+
+    def error(self, *args, **kwargs):
+        pass
+
+    def warning(self, *args, **kwargs):
+        pass
 
 
 class TelegramBotAPITests(unittest.TestCase):
@@ -27,10 +45,13 @@ class TelegramBotAPITests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        with open('../config.json', 'r') as f:
+        logger.logger = LoggerFake()
+
+        with open('../devconfig.json', 'r') as f:
             token = json.loads(f.read())['token']
+
         TelegramBotAPI._POLLS_FILENAME = '../polls.json'
-        cls.botapi = TelegramBotAPI(token)
+        cls.botapi = TelegramBotAPI(token, True)
         try:
             cls.botapi.get_new_updates()
             cls.botapi.send_message(TelegramBotAPITests.chat_id,
