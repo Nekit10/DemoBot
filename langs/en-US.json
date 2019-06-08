@@ -1,0 +1,14 @@
+{
+  "code": "en-US",
+  "name": "English (US)",
+  "translation": {
+    "kick": "Kick %NAME%?",
+    "kick_yes": "Yes",
+    "kick_no": "No",
+    "kick_res": "Expelling %NAME% on the results of the voting!",
+    "descrb_problem": "Describe problem in next your message",
+    "give_contact_info": "Enter please your email, phone or nickname in Telegram or Discord. We will tell you about results of bug-report consideration",
+    "bug_report_send": "Bug report was successfully sent",
+    "lang_choose": "Choose your language: "
+  }
+}
