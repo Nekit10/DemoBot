@@ -19,6 +19,8 @@
 import os
 import json
 
+from src import logger
+
 lang_by_chat = {}
 
 CHAT_LANG_FILE = 'chat_langs.json'
@@ -26,6 +28,8 @@ CHAT_LANG_FILE = 'chat_langs.json'
 
 def set_lang_for_chat(chat_id: int, lang: str) -> None:
     global lang_by_chat
+
+    logger.logger.info('Changing lang for chat #' + str(chat_id) + ' to ' + lang)
 
     lang_by_chat[chat_id] = lang
     save_chat_langs()
@@ -55,6 +59,8 @@ def _get_trans_str(chat_id: int, name: str) -> str:
 def load_chat_langs():
     global lang_by_chat
 
+    logger.logger.info('Reading chat\'s langs')
+
     file_full_path = os.path.join(os.path.dirname(__file__), '..\\..\\' + CHAT_LANG_FILE)
     if os.path.exists(file_full_path):
         with open(file_full_path, 'r') as f:
@@ -65,6 +71,8 @@ def load_chat_langs():
 
 
 def save_chat_langs():
+    logger.logger.info('Saving chat\'s langs')
+
     file_full_path = os.path.join(os.path.dirname(__file__), '..\\..\\' + CHAT_LANG_FILE)
     with open(file_full_path, 'w') as f:
         f.write(json.dumps(lang_by_chat))

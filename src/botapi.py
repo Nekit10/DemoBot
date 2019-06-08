@@ -168,6 +168,8 @@ class TelegramBotAPI:
 
         self.command_listeners[command] = listener
 
+        logger.logger.info('Successfully added listener for command /' + command)
+
     def send_inline_question(self, chat_id: int, msg: str, options: list, listener) -> None:
         if not callable(listener):
             raise TypeError('Listener must be callable')

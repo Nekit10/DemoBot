@@ -24,14 +24,20 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
+from src import logger
+
 
 def _parse_mail_info():
+    logger.logger.debug('Reading data from emailinfo.json')
+
     with open(os.path.join(os.path.dirname(__file__), 'mailinfo.json'), 'r') as f:
         return json.loads(f.read())
 
 
 def send_email(to: str, re: str, msg_: str, files: list):
     mail_info = _parse_mail_info()
+
+    logger.logger.info('Sending email to ' + to)
 
     s = SMTP(host='smtp.gmail.com', port=587)
     s.starttls()
@@ -48,6 +54,8 @@ def send_email(to: str, re: str, msg_: str, files: list):
         filename = file_lst[0]
         attachment = open(file_lst[1], 'rb')
 
+        logger.logger.debug('Attaching ' + filename + ' to email')
+
         p = MIMEBase('application', 'octet-stream')
 
         p.set_payload(attachment.read())
@@ -59,5 +67,7 @@ def send_email(to: str, re: str, msg_: str, files: list):
         msg.attach(p)
 
     s.send_message(msg)
+
+    logger.logger.info('Email successfullly sent')
 
     del msg

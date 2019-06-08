@@ -37,7 +37,9 @@ def init_bot(debug: bool = False):
     config = load_config(debug)
     logger.logger.debug('Crating instance of TelegramBotAPI in bot init')
     api = TelegramBotAPI(config['token'], debug)
+    logger.logger.debug('Adding report command listener')
     api.add_command_listener('report', report_command_processor)
+    logger.logger.debug('Adding lang command listener')
     api.add_command_listener('lang', send_lang_inline)
 
 
@@ -132,6 +134,7 @@ def check_old_polls():
 
 
 def report_command_processor(chat_id: int, from_id: int):
+    logger.logger.info('Starting processor for report command')
     api.get_new_updates()
     api.send_message(chat_id, langapi.msg_descrb_problem(chat_id))
 
@@ -146,6 +149,8 @@ def report_command_processor(chat_id: int, from_id: int):
                     break
             except (NameError, IndexError, KeyError) as e:
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
+
+    logger.logger.debug('Asking for contact info')
 
     api.get_new_updates()
     api.send_message(chat_id, langapi.msg_give_contact_info(chat_id))
@@ -162,8 +167,12 @@ def report_command_processor(chat_id: int, from_id: int):
             except (NameError, IndexError, KeyError) as e:
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
 
+    logger.logger.debug('Sending bug report')
+
     report_custom_message(bug_report_msg, from_msg)
     api.send_message(chat_id, langapi.msg_bug_report_send(chat_id))
+
+    logger.logger.info('Successfully sent bug report')
 
 
 def change_lang_in_chat(chat_id: int, lang: str):
@@ -171,6 +180,7 @@ def change_lang_in_chat(chat_id: int, lang: str):
 
 
 def send_lang_inline(chat_id: int, from_id: int):
+    logger.logger.info('Sending inline lang chooser in chat #' + str(chat_id))
     api.send_inline_question(chat_id, langapi.msg_lang_choose(chat_id), langapi.get_all_langs(), change_lang_in_chat)
 
 
