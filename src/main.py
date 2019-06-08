@@ -46,5 +46,8 @@ if __name__ == '__main__':
             logger.logger.debug('Running main loop from beginning')
             demobot.main_loop()
         except Exception as e:
-            logger.logger.warning('Exception (Ignored)! ' + str(e))
-            print(str(e))
+            if not DEBUG_MODE:
+                logger.logger.warning('Exception (Ignored)! ' + str(e))
+                print(str(e))
+            else:
+                raise e
