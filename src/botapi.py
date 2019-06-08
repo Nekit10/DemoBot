@@ -28,16 +28,25 @@ class TelegramBotException(Exception):
     pass
 
 
+def import_config(debug: bool = False):
+    config_filename = 'config.json' if not debug else 'devconfig.json'
+    logger.logger.debug('Using ' + config_filename + ' as config file')
+    with open(config_filename, 'r') as f:
+        return json.loads(f.read())
+
+
 class TelegramBotAPI:
     """A set if function that communicate with official Telegram bot api"""
     token: str
     url: str
     offset: int = 0
 
+    command_listeners = {}
+
     polls: dict
     _POLLS_FILENAME: str = 'polls.json'
 
-    def __init__(self, token: str):
+    def __init__(self, token: str, debug: bool):
         """
         Create instance of TelegramBotAPI
 
@@ -45,6 +54,8 @@ class TelegramBotAPI:
         token: str - your's bot token. You can get it from @BotFather in Telegram
         """
         logger.logger.debug('Running __init__ of TelegramBotAPI, token="' + token + '"')
+
+        self.config = import_config(debug)
 
         self.token = token
         self.url = 'https://api.telegram.org/bot' + token
@@ -106,6 +117,7 @@ class TelegramBotAPI:
             raise TelegramBotException(response['description'])
 
         self._update_polls(response['result'])
+        self._check_for_commands(response['result'])
 
         return response
 
@@ -135,6 +147,8 @@ class TelegramBotAPI:
 
         response = response.json()
 
+        self._check_for_commands(response['result'])
+
         if not response['ok']:
             logger.logger.error('Got error from api! ' + response['description'])
             raise TelegramBotException(response['description'])
@@ -144,6 +158,12 @@ class TelegramBotAPI:
     def send_error_message(self, chat_id: int, e: Exception) -> dict:
         logger.logger.warning('Sending error message to chat #' + str(chat_id) + ' for Exception: ' + str(e))
         return self.send_message(chat_id, 'Error: ' + str(e))
+
+    def add_command_listener(self, command: str, listener):
+        if not callable(listener):
+            raise TypeError('Listener must be callable')
+
+        self.command_listeners[command] = listener
 
     @staticmethod
     def _load_polls() -> dict:
@@ -184,3 +204,18 @@ class TelegramBotAPI:
                 poll_options = update['poll']['options']
                 self.polls[poll_id] = poll_options
                 logger.logger.trace('Updated poll with id ' + str(poll_id))
+
+    def _check_for_commands(self, updates: list) -> None:
+        """Checking if messages contain message with command. If yes will launch command listener"""
+
+        logger.logger.trace('Checking for commands')
+
+        for update in updates:
+            try:
+                if update['message']['text'].startswith('/') and self.config['bot_username'] in update['message']['text']:
+                    command = update['message']['text'].replace('@', ' ').split()[0][1:]
+
+                    if command in self.command_listeners.keys():
+                        self.command_listeners[command](update['message']['chat']['id'], update['message']['from']['id'])
+            except (NameError, IndexError, KeyError) as e:
+                logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
