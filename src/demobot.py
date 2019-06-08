@@ -20,6 +20,7 @@ import json
 import time
 
 from src import logger
+from src.syslang import langapi
 from src.botapi import TelegramBotAPI
 from src.sysbugs.bugtrackerapi import report_custom_message
 
@@ -37,6 +38,7 @@ def init_bot(debug: bool = False):
     logger.logger.debug('Crating instance of TelegramBotAPI in bot init')
     api = TelegramBotAPI(config['token'], debug)
     api.add_command_listener('report', report_command_processor)
+    api.add_command_listener('lang', send_lang_inline)
 
 
 def load_config(debug: bool = False) -> dict:
@@ -81,7 +83,7 @@ def check_return_poll_candidates() -> list:
 def start_poll(chat_id: int, name: str, user_id: int) -> None:
     global polls, api
 
-    response = api.start_poll(chat_id, 'Кикнуть ' + name + '?', ['Да', 'Нет'])
+    response = api.start_poll(chat_id, langapi.msg_kick(chat_id).replace('%NAME%', name), [langapi.msg_kick_yes(chat_id), langapi.msg_kick_no(chat_id)])
 
     poll_id = int(response['result']['poll']['id'])
 
@@ -106,7 +108,7 @@ def kick_candidate(poll_id: int):
     logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' + str(polls[poll_id]['chat_id']))
 
     api.send_message(polls[poll_id]['chat_id'],
-                     'Выгоняем ' + polls[poll_id]['name'] + ' по результатам опроса!')
+                     langapi.msg_kick_res(polls[poll_id]['chat_id']).replace('%NAME%', polls[poll_id]['name']))
     logger.logger.debug('Kick message already sent')
     api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
 
@@ -131,7 +133,7 @@ def check_old_polls():
 
 def report_command_processor(chat_id: int, from_id: int):
     api.get_new_updates()
-    api.send_message(chat_id, 'Опишите проблему в вашем слудющем сообщении:')
+    api.send_message(chat_id, langapi.msg_descrb_problem(chat_id))
 
     bug_report_msg = ''
 
@@ -146,7 +148,7 @@ def report_command_processor(chat_id: int, from_id: int):
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
 
     api.get_new_updates()
-    api.send_message(chat_id, 'Дайте нам электронную почту, номер телефона, аккаунт в Telegram или Discord для связи с вами:')
+    api.send_message(chat_id, langapi.msg_give_contact_info(chat_id))
 
     from_msg = ''
 
@@ -161,7 +163,15 @@ def report_command_processor(chat_id: int, from_id: int):
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
 
     report_custom_message(bug_report_msg, from_msg)
-    api.send_message(chat_id, 'Баг-репорт успешно отправлен. Ожидайте, мы с вами свяжемся')
+    api.send_message(chat_id, langapi.msg_bug_report_send(chat_id))
+
+
+def change_lang_in_chat(chat_id: int, lang: str):
+    langapi.set_lang_for_chat(chat_id, lang)
+
+
+def send_lang_inline(chat_id: int, from_id: int):
+    api.send_inline_question(chat_id, langapi.msg_lang_choose(chat_id), langapi.get_all_langs(), change_lang_in_chat)
 
 
 def main_loop() -> None:
