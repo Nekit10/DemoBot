@@ -20,11 +20,13 @@ import platform
 
 from src import demobot, logger
 from src.sysbugs.bugtrackerapi import report_exception
+from src.syslang.langapi import load_chat_langs
 
 VERSION = '1.0.0-alpha.1'
 DEBUG_MODE = True
 
 logger.init()
+load_chat_langs()
 
 
 def log_server_info():
