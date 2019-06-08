@@ -21,6 +21,7 @@ import time
 
 from src import logger
 from src.botapi import TelegramBotAPI
+from src.sysbugs.bugtrackerapi import report_custom_message
 
 polls: dict = {}
 config: dict = {}
@@ -34,7 +35,8 @@ def init_bot(debug: bool = False):
     logger.logger.debug('Loading config file (debug = ' + 'True)' if debug else 'False)')
     config = load_config(debug)
     logger.logger.debug('Crating instance of TelegramBotAPI in bot init')
-    api = TelegramBotAPI(config['token'])
+    api = TelegramBotAPI(config['token'], debug)
+    api.add_command_listener('report', report_command_processor)
 
 
 def load_config(debug: bool = False) -> dict:
@@ -125,6 +127,41 @@ def check_old_polls():
 
     for i in remove:
         del polls[i]
+
+
+def report_command_processor(chat_id: int, from_id: int):
+    api.get_new_updates()
+    api.send_message(chat_id, 'Опишите проблему в вашем слудющем сообщении:')
+
+    bug_report_msg = ''
+
+    while bug_report_msg == '':
+        updates_ = api.get_new_updates()['result']
+        for update_ in updates_:
+            try:
+                if update_['message']['chat']['id'] == chat_id and update_['message']['from']['id'] == from_id:
+                    bug_report_msg = update_['message']['text']
+                    break
+            except (NameError, IndexError, KeyError) as e:
+                logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
+
+    api.get_new_updates()
+    api.send_message(chat_id, 'Дайте нам электронную почту, номер телефона, аккаунт в Telegram или Discord для связи с вами:')
+
+    from_msg = ''
+
+    while from_msg == '':
+        updates_ = api.get_new_updates()['result']
+        for update_ in updates_:
+            try:
+                if update_['message']['chat']['id'] == chat_id and update_['message']['from']['id'] == from_id:
+                    from_msg = update_['message']['text']
+                    break
+            except (NameError, IndexError, KeyError) as e:
+                logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
+
+    report_custom_message(bug_report_msg, from_msg)
+    api.send_message(chat_id, 'Баг-репорт успешно отправлен. Ожидайте, мы с вами свяжемся')
 
 
 def main_loop() -> None:
