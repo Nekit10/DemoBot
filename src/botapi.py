@@ -42,6 +42,7 @@ class TelegramBotAPI:
     offset: int = 0
 
     command_listeners = {}
+    callback_query_listeners = {}
 
     polls: dict
     _POLLS_FILENAME: str = 'polls.json'
@@ -118,6 +119,7 @@ class TelegramBotAPI:
 
         self._update_polls(response['result'])
         self._check_for_commands(response['result'])
+        self._check_for_inline(response['result'])
 
         return response
 
@@ -148,6 +150,7 @@ class TelegramBotAPI:
         response = response.json()
 
         self._check_for_commands(response['result'])
+        self._check_for_inline(response['result'])
 
         if not response['ok']:
             logger.logger.error('Got error from api! ' + response['description'])
@@ -164,6 +167,33 @@ class TelegramBotAPI:
             raise TypeError('Listener must be callable')
 
         self.command_listeners[command] = listener
+
+    def send_inline_question(self, chat_id: int, msg: str, options: list, listener) -> None:
+        if not callable(listener):
+            raise TypeError('Listener must be callable')
+
+        logger.logger.info('Sending message with inline reply markup to chat #' + str(chat_id) + ', msg = "' + msg)
+
+        url_ = '{}/sendMessage?chat_id={}&text={}&reply_markup={}"inline_keyboard":[['.format(self.url, str(chat_id), msg, '{')
+
+        for option in options:
+            url_ = url_ + '{' + '"text": "{}", "callback_data": "{}"'.format(option[0], option[1]) + '}, '
+
+        url_ = url_[:-2] + ']]}'
+
+        response = requests.get(url_)
+
+        logger.logger.info('Got sendMessage with inline reply markup response. Status code: ' + str(response.status_code))
+
+        response = response.json()
+
+        if not response['ok']:
+            logger.logger.error('Got error from api! ' + response['description'])
+            raise TelegramBotException(response['description'])
+
+        msg_id = response['result']['message_id']
+
+        self.callback_query_listeners[msg_id] = listener
 
     @staticmethod
     def _load_polls() -> dict:
@@ -219,3 +249,17 @@ class TelegramBotAPI:
                         self.command_listeners[command](update['message']['chat']['id'], update['message']['from']['id'])
             except (NameError, IndexError, KeyError) as e:
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
+
+    def _check_for_inline(self, updates: list):
+        """Checking updates for callback_query"""
+
+        logger.logger.trace('Checking for callback_query')
+
+        for update in updates:
+            try:
+                if 'callback_query' in update.keys():
+                    msg_id = update['callback_query']['message']['message_id']
+                    if msg_id in self.callback_query_listeners.keys():
+                        self.callback_query_listeners[msg_id](update['callback_query']['message']['chat']['id'], update['callback_query']['data'])
+            except (NameError, IndexError, KeyError) as e:
+                logger.logger.trace('Ignored name exception in checking callback_query command: ' + str(e))
