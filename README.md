@@ -2,11 +2,12 @@
 Vote kick bot for Telegram.<br>
 @chatdemocratic_bot
 ## Download latest version's source code
-You can download source code of DemoBot v1.0.0-alpha.1 [here](https://github.com/Nekit10/DemoBot/releases/tag/v1.0.0-alpha.1)
+You can download source code of DemoBot v1.0.0-alpha.2 [here](https://github.com/Nekit10/DemoBot/releases/tag/v1.0.0-alpha.2)
 ## Features
 Just mention bot in reply to message of user whom you want to kick. Bot will kick him (if 'yes' was choosed more times than 'no') in 12 hours. Poll will be closed in 24 hours.
+* Several languages
+* Bug reporting
 ## Planned features
-* Different languages (now only Russian)
 * Static count of 'yes' votes that is needed to kick
 * Changable timeouts
 ## Contribution
