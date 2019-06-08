@@ -17,6 +17,7 @@
 #    Copyright (c) 2019 Nikita Serba
 
 import json
+import os
 from smtplib import SMTP
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -25,7 +26,7 @@ from email import encoders
 
 
 def _parse_mail_info():
-    with open('mailinfo.json', 'r') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'mailinfo.json'), 'r') as f:
         return json.loads(f.read())
 
 

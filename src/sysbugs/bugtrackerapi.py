@@ -22,7 +22,7 @@ from src.sysbugs import mailutil
 
 
 def get_log_files() -> list:
-    logs_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..\\..\\logs\\')
+    logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..\\..\\logs\\')
     files = [[f, os.path.join(logs_dir, f)] for f in os.listdir(logs_dir) if os.path.isfile(os.path.join(logs_dir, f)) and f.endswith('.log')]
 
     return files
