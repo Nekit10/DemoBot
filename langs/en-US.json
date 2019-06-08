@@ -9,6 +9,7 @@
     "descrb_problem": "Describe problem in next your message",
     "give_contact_info": "Enter please your email, phone or nickname in Telegram or Discord. We will tell you about results of bug-report consideration",
     "bug_report_send": "Bug report was successfully sent",
-    "lang_choose": "Choose your language: "
+    "lang_choose": "Choose your language: ",
+    "lang_notify": "Changed language to English (US)"
   }
 }

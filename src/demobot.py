@@ -177,6 +177,7 @@ def report_command_processor(chat_id: int, from_id: int):
 
 def change_lang_in_chat(chat_id: int, lang: str):
     langapi.set_lang_for_chat(chat_id, lang)
+    api.send_message(chat_id, langapi.msg_lang_notify(chat_id))
 
 
 def send_lang_inline(chat_id: int, from_id: int):
