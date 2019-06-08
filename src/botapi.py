@@ -212,7 +212,7 @@ class TelegramBotAPI:
 
         for update in updates:
             try:
-                if update['message']['text'].startswith('/') and self.config['bot_username'] in update['message']['text']:
+                if update['message']['text'].startswith('/') and (self.config['bot_username'] in update['message']['text'] or update['message']['chat']['type'] == 'private'):
                     command = update['message']['text'].replace('@', ' ').split()[0][1:]
 
                     if command in self.command_listeners.keys():
