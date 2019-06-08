@@ -51,7 +51,7 @@ class TelegramBotAPITests(unittest.TestCase):
             token = json.loads(f.read())['token']
 
         TelegramBotAPI._POLLS_FILENAME = '../polls.json'
-        cls.botapi = TelegramBotAPI(token)
+        cls.botapi = TelegramBotAPI(token, True)
         try:
             cls.botapi.get_new_updates()
             cls.botapi.send_message(TelegramBotAPITests.chat_id,
