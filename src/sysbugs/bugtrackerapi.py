@@ -28,9 +28,9 @@ def get_log_files() -> list:
     return files
 
 
-def report_custom_message(msg: str):
-    mailutil.send_email(mailutil._parse_mail_info()['bug_tracker_email'], 'Bug Report', 'New bug report!\n' + msg, get_log_files())
+def report_custom_message(msg: str, from_email: str):
+    mailutil.send_email(mailutil._parse_mail_info()['bug_tracker_email'], 'Bug Report', 'New bug report!\n' + msg + '\nFrom: ' + from_email, get_log_files())
 
 
-def report_exception(e: Exception, from_email: str):
-    report_custom_message(str(e) + '\nFrom: ' + from_email)
+def report_exception(e: Exception):
+    report_custom_message(str(e), 'None')
