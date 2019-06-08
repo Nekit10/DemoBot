@@ -19,6 +19,7 @@
 import platform
 
 from src import demobot, logger
+from src.sysbugs.bugtrackerapi import report_exception
 
 VERSION = '1.0.0-alpha.1'
 DEBUG_MODE = True
@@ -48,6 +49,7 @@ if __name__ == '__main__':
         except Exception as e:
             if not DEBUG_MODE:
                 logger.logger.warning('Exception (Ignored)! ' + str(e))
+                report_exception(e)
                 print(str(e))
             else:
                 raise e
