@@ -56,7 +56,9 @@ def check_return_poll_candidates() -> list:
 
     for update in updates:
         try:
-            logger.logger.trace('Checking new update! (is mention? ' + str(config['bot_username'] in update['message']['text']) + '; is reply? ' + str('reply_to_message' in update['message'].keys()) + ')\n' + str(update))
+            logger.logger.trace('Checking new update! (is mention? ' + str(
+                config['bot_username'] in update['message']['text']) + '; is reply? ' + str(
+                'reply_to_message' in update['message'].keys()) + ')\n' + str(update))
             if config['bot_username'] in update['message']['text'] and 'reply_to_message' in update['message'].keys():
                 result = dict()
                 result['chat_id'] = update['message']['reply_to_message']['chat']['id']
@@ -90,30 +92,46 @@ def start_poll(chat_id: int, name: str, user_id: int) -> None:
     polls[poll_id] = poll_info
 
 
+def check_kick_candidates():
+    candidates = check_return_poll_candidates()
+    for candidate in candidates:
+        start_poll(candidate['chat_id'], candidate['name'], candidate['user_id'])
+
+
+def kick_candidate(poll_id: int):
+    global polls
+
+    logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' + str(polls[poll_id]['chat_id']))
+
+    api.send_message(polls[poll_id]['chat_id'],
+                     'Выгоняем ' + polls[poll_id]['name'] + ' по результатам опроса!')
+    logger.logger.debug('Kick message already sent')
+    api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
+
+
+def check_old_polls():
+    global polls
+    remove = []
+
+    for poll_id in polls.keys():
+        logger.logger.trace('Checking poll with id ' + str(poll_id))
+        poll_options = api.get_poll_result(poll_id)
+        if (time.time() - polls[poll_id]['date']) >= 12 * 3600 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
+            kick_candidate(poll_id)
+            remove += [poll_id]
+        elif (time.time() - polls[poll_id]['date']) >= 24 * 3600:
+            logger.logger.info('Closing poll with id ' + str(poll_id) + ' after 24 hours')
+            remove += [poll_id]
+
+    for i in remove:
+        del polls[i]
+
+
 def main_loop() -> None:
-    global polls, api
+    global polls
     logger.logger.info('Started main loop')
 
     while True:
-        candidates = check_return_poll_candidates()
-        for candidate in candidates:
-            start_poll(candidate['chat_id'], candidate['name'], candidate['user_id'])
-
-        remove = []
-        for poll_id in polls.keys():
-            logger.logger.trace('Checking poll with id ' + str(poll_id))
-            poll_options = api.get_poll_result(poll_id)
-            if (time.time() - polls[poll_id]['date']) >= 12*3600 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
-                logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' + str(polls[poll_id]['chat_id']))
-                api.send_message(polls[poll_id]['chat_id'], 'Выгоняем ' + polls[poll_id]['name'] + ' по результатам опроса!')
-                logger.logger.debug('Kick message already sent')
-                api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
-                remove += [poll_id]
-            elif (time.time() - polls[poll_id]['date']) >= 24*3600:
-                logger.logger.info('Closing poll with id ' + str(poll_id) + ' after 24 hours')
-                remove += [poll_id]
-
-        for i in remove:
-            del polls[i]
-
+        check_kick_candidates()
+        check_old_polls()
         api.save_polls()
