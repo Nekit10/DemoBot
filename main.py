@@ -25,7 +25,7 @@ from src.sysbugs.bugtrackerapi import report_exception
 from src.syslang.langapi import load_chat_langs, msg_version_info
 
 VERSION = '1.0.0-alpha.2'
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 logger.init()
 load_chat_langs()
