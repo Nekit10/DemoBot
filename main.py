@@ -25,7 +25,7 @@ from src.sysbugs.bugtrackerapi import report_exception
 from src.syslang.langapi import load_chat_langs, msg_version_info
 
 VERSION = '1.0.0-alpha.2'
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 logger.init()
 load_chat_langs()
@@ -48,11 +48,11 @@ if __name__ == '__main__':
     log_server_info()
     demobot.init_bot(DEBUG_MODE)
 
-    if len(sys.argv) and sys.argv[1] == '--version-notify':
+    if len(sys.argv) > 1 and sys.argv[1] == '--version-notify':
         api = TelegramBotAPI(demobot.config['token'], DEBUG_MODE)
         for chat in api.chats:
             api.send_message(chat, msg_version_info(chat))
-        exit(0)
+        sys.exit(0)
 
     while True:
         try:
