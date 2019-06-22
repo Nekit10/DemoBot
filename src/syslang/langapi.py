@@ -61,6 +61,8 @@ def load_chat_langs():
 
     logger.logger.info('Reading chat\'s langs')
 
+    lang_by_chat_ = {}
+
     file_full_path = os.path.join(os.path.dirname(__file__), '..\\..\\' + CHAT_LANG_FILE)
     if os.path.exists(file_full_path):
         with open(file_full_path, 'r') as f:
