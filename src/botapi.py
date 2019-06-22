@@ -272,14 +272,14 @@ class TelegramBotAPI:
                 logger.logger.trace('Ignored name exception in checking callback_query command: ' + str(e))
 
     def _load_chats(self) -> list:
-        chats_full_path = os.path.join(os.path.dirname(__file__), '..\\' + self._CHATS_FILENAME)
+        chats_full_path = os.path.join(os.path.dirname(__file__), '../' + self._CHATS_FILENAME)
 
         if os.path.isfile(chats_full_path):
             with open(chats_full_path, 'r') as f:
                 return json.loads(f.read())
 
     def _save_chats(self):
-        chats_full_path = os.path.join(os.path.dirname(__file__), '..\\' + self._CHATS_FILENAME)
+        chats_full_path = os.path.join(os.path.dirname(__file__), '../' + self._CHATS_FILENAME)
 
         with open(chats_full_path, 'w') as f:
             f.write(json.dumps(self.chats))
