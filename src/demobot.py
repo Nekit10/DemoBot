@@ -68,7 +68,9 @@ def check_return_poll_candidates() -> list:
             if config['bot_username'] in update['message']['text'] and 'reply_to_message' in update['message'].keys():
                 result = dict()
                 result['chat_id'] = update['message']['reply_to_message']['chat']['id']
-                result['name'] = update['message']['reply_to_message']['from']['first_name'] + ' ' + update['message']['reply_to_message']['from']['last_name']
+                result['name'] = update['message']['reply_to_message']['from']['first_name']
+                if 'last_name' in update['message']['reply_to_message']['from'].keys():
+                    result['name'] += ' ' + update['message']['reply_to_message']['from']['last_name']
                 result['user_id'] = update['message']['reply_to_message']['from']['id']
 
                 logger.logger.info('Found kick candidate in chat #' + str(result['chat_id']) + ', with name ' + result['name'] + '(' + str(result['user_id']) + ')')
