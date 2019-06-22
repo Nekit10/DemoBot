@@ -39,7 +39,7 @@ logger: AppLogger
 
 
 def clean_old_logs():
-    log_dir = 'logs\\'
+    log_dir = 'logs/'
     files = [f for f in os.listdir(log_dir) if os.path.isfile(os.path.join(log_dir, f)) and f.endswith('.log') and not f.startswith('latest')]
     if len(files) > 4:
         for log_file in files[4:]:
@@ -61,13 +61,13 @@ def init():
     std_handler.setFormatter(formatter)
 
     # Latest debug log
-    latest_handler = RotatingFileHandler('logs\\latest.log', mode='a', maxBytes=20 * 1024 * 2014, backupCount=0,
+    latest_handler = RotatingFileHandler('logs/latest.log', mode='a', maxBytes=20 * 1024 * 2014, backupCount=0,
                                          encoding=None, delay=0)
     latest_handler.setLevel(logging.DEBUG)
     latest_handler.setFormatter(formatter)
 
     # Old info log
-    old_handler = RotatingFileHandler(datetime.datetime.now().strftime("logs\\%Y.%m.%d_%H-%M-%S") + '.log', mode='w',
+    old_handler = RotatingFileHandler(datetime.datetime.now().strftime("logs/%Y.%m.%d_%H-%M-%S") + '.log', mode='w',
                                       maxBytes=5 * 1024 * 2014, backupCount=5, encoding=None, delay=0)
     old_handler.setLevel(logging.INFO)
     old_handler.setFormatter(formatter)

@@ -36,20 +36,20 @@ def set_lang_for_chat(chat_id: int, lang: str) -> None:
 
 
 def get_lang_name_by_code(code: str) -> str:
-    lang_file = os.path.join(os.path.dirname(__file__), '..\\..\\langs\\' + code + '.json')
+    lang_file = os.path.join(os.path.dirname(__file__), '../../langs/' + code + '.json')
     with open(lang_file, 'r', encoding='utf-8') as f:
         return json.loads(f.read())['name']
 
 
 def get_all_langs() -> list:
-    langs_path = os.path.join(os.path.dirname(__file__), '..\\..\\langs\\')
+    langs_path = os.path.join(os.path.dirname(__file__), '../../langs/')
     return [[get_lang_name_by_code(f[:-5]), f[:-5]] for f in os.listdir(langs_path) if f.endswith('.json') and os.path.isfile(os.path.join(langs_path, f))]
 
 
 def _get_trans_str(chat_id: int, name: str) -> str:
     code = 'en-US' if chat_id not in lang_by_chat.keys() else lang_by_chat[chat_id]
 
-    lang_file = os.path.join(os.path.dirname(__file__), '..\\..\\langs\\' + code + '.json')
+    lang_file = os.path.join(os.path.dirname(__file__), '../../langs/' + code + '.json')
     with open(lang_file, 'r', encoding='utf-8') as f:
         langs = json.loads(f.read())
 
@@ -63,7 +63,7 @@ def load_chat_langs():
 
     lang_by_chat_ = {}
 
-    file_full_path = os.path.join(os.path.dirname(__file__), '..\\..\\' + CHAT_LANG_FILE)
+    file_full_path = os.path.join(os.path.dirname(__file__), '../../' + CHAT_LANG_FILE)
     if os.path.exists(file_full_path):
         with open(file_full_path, 'r') as f:
             lang_by_chat_ = json.loads(f.read())
@@ -75,7 +75,7 @@ def load_chat_langs():
 def save_chat_langs():
     logger.logger.info('Saving chat\'s langs')
 
-    file_full_path = os.path.join(os.path.dirname(__file__), '..\\..\\' + CHAT_LANG_FILE)
+    file_full_path = os.path.join(os.path.dirname(__file__), '../../' + CHAT_LANG_FILE)
     with open(file_full_path, 'w') as f:
         f.write(json.dumps(lang_by_chat))
 
