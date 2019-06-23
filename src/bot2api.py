@@ -15,7 +15,7 @@
 #    along with DemocraticBot.  If not, see <https://www.gnu.org/licenses/>.
 #
 #    Copyright (c) 2019 Nikita Serba
-
+import inspect
 import os
 import json
 import ctypes
@@ -197,3 +197,32 @@ class Bot2API:
                 self.method(*self.args, **self.kwargs)
             finally:
                 pass  # end function here bro
+
+        @staticmethod
+        def _async_raise(tid: int, exctype):
+            if not inspect.isclass(exctype):
+                raise TypeError("Only types can be raised (not instances)")
+
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
+
+            if res == 0:
+                raise ValueError('Invalid thread id')
+            elif res != 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
+                raise SystemError('PyThreadState_SetAsyncExc failed')
+
+        def get_id(self):
+            if not self.isAlive():
+                raise threading.ThreadError('Thread is not active')
+
+            if hasattr(self, "_thread_id"):
+                return self._thread_id
+            for tid, tobj in threading._active.items():
+                if tobj is self:
+                    self._thread_id = tid
+                    return tid
+
+            raise SystemError('Thread does not have id (???)')
+
+        def exit(self):
+            self._async_raise(self.get_id(), InterruptedError)
