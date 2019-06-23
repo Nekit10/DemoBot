@@ -96,8 +96,12 @@ class Bot2API:
         self._inline_listeners[msg_id] = listener
         self.add_message_listener(self._inline_listener_def, msg_id, timeout_seconds)
 
-    def start_poll(self, chat_id: int, question: str, answers: str) -> dict:
-        pass
+    def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
+        return self._respond_prepare(self._request_prepare('sendPoll', {
+            'chat_id': chat_id,
+            'question': question,
+            'options': answers
+        }))
 
     def send_message(self, chat_id: int, message: str) -> dict:
         pass
@@ -108,7 +112,7 @@ class Bot2API:
     def _load_config(self, filename: str) -> None:
         pass
 
-    def _request_prepare(self, request: str) -> None:
+    def _request_prepare(self, command_name: str, args: dict) -> requests.Response:
         pass
 
     def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
@@ -117,7 +121,7 @@ class Bot2API:
     def _inline_listener_def(self, update: dict,  msg_id: int, timeout_seconds: int = 300) -> None:
         pass
 
-    def _respond_prepare(self) -> dict:
+    def _respond_prepare(self, response: requests.Response) -> dict:
         pass
 
     def _run_request(self) -> requests.Response:
