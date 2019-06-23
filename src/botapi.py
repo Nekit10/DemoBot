@@ -18,23 +18,26 @@
 
 import json
 import os
+from multiprocessing import Queue
 
 import requests
+from deprecated import deprecated
 
 from src import logger
+from src.threads.cmdthread import CmdHandlerThread
 
-
+@deprecated
 class TelegramBotException(Exception):
     pass
 
-
+@deprecated
 def import_config(debug: bool = False):
     config_filename = 'config.json' if not debug else 'devconfig.json'
     logger.logger.debug('Using ' + config_filename + ' as config file')
     with open(config_filename, 'r') as f:
         return json.loads(f.read())
 
-
+@deprecated
 class TelegramBotAPI:
     """A set if function that communicate with official Telegram bot api"""
     token: str
@@ -45,6 +48,9 @@ class TelegramBotAPI:
     callback_query_listeners = {}
 
     chats = []
+
+    cmd_thread: CmdHandlerThread
+    cmd_queue: Queue
 
     polls: dict
     _POLLS_FILENAME: str = 'polls.json'
@@ -65,6 +71,11 @@ class TelegramBotAPI:
         self.url = 'https://api.telegram.org/bot' + token
         self.polls = self._load_polls()
         self.chats = self._load_chats()
+
+        self.cmd_queue = Queue()
+        self.cmd_thread = CmdHandlerThread(self.cmd_queue)
+        self.cmd_thread.setDaemon(True)
+        self.cmd_thread.start()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         logger.logger.info('Starting poll (' + question + ') -> [' + ', '.join(answers) + ']; in chat #' + str(chat_id))
@@ -113,13 +124,13 @@ class TelegramBotAPI:
 
         response = response.json()
 
-        if len(response['result']) > 0:
-            self.offset = response['result'][-1]['update_id'] + 1
-            logger.logger.trace('Updated offset to ' + str(self.offset))
-
         if not response['ok']:
             logger.logger.error('Got error from api! ' + response['description'])
             raise TelegramBotException(response['description'])
+
+        if len(response['result']) > 0:
+            self.offset = response['result'][-1]['update_id'] + 1
+            logger.logger.trace('Updated offset to ' + str(self.offset))
 
         self._update_polls(response['result'])
         self._check_for_commands(response['result'])
@@ -253,7 +264,7 @@ class TelegramBotAPI:
                     command = update['message']['text'].replace('@', ' ').split()[0][1:]
 
                     if command in self.command_listeners.keys():
-                        self.command_listeners[command](update['message']['chat']['id'], update['message']['from']['id'])
+                        self.cmd_queue.put([self.command_listeners[command], [update['message']['chat']['id'], update['message']['from']['id']]])
             except (NameError, IndexError, KeyError) as e:
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
 
