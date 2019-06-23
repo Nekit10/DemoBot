@@ -42,7 +42,16 @@ class Bot2API:
     _updater_command_queue: Queue
 
     def __init__(self, debug_mode: bool):
-        pass
+        config_filename = 'config.json' if not debug_mode else 'devconfig.json'
+        self._load_config(config_filename)
+
+        self._token = self._config['token']
+        self._url = 'https://api.telegram.org/bot' + self._token
+
+        self._updater_command_queue = Queue()
+        self._updater_loop = self._UpdaterLoopThread(self._updater_command_queue)
+        self._updater_loop.setDaemon(True)
+        self._updater_loop.start()
 
     def add_message_listener(self, listener, *args, **kwargs) -> None:
         """
