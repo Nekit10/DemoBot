@@ -84,8 +84,8 @@ class Bot2API:
 
     def add_inline_listener(self, msg_id: int, chat_id: int, listener, timeout_seconds: int = 1) -> None:
         """
-        This methods adds `listener` as listener for running /`command`@BotName.
-        UpdaterLoopThread will call listener(chat_id: int, from_id: int) for every new command.
+        This methods adds `listener` as listener for inline callback.
+        UpdaterLoopThread will call listener(chat_id: int, data: str) for every new command.
         Listener will be killed after timeout_seconds
         """
 
@@ -165,7 +165,7 @@ class Bot2API:
     def _respond_prepare(self, response: requests.Response) -> dict:
         pass
 
-    def _run_request(self, url: srr) -> requests.Response:
+    def _run_request(self, url: str) -> requests.Response:
         pass
 
     class _UpdaterLoopThread(Thread):
