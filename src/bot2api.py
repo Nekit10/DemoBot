@@ -164,6 +164,9 @@ class Bot2API:
             text = update['message']['text']
             if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
                 thread = self._MethodRunningThread(self._command_listeners[command], update['chat']['id'], update['from']['id'])
+                thread.start()
+                thread.join(timeout_seconds)
+                thread.exit()
         except (NameError, KeyError, IndexError):
             pass
 
