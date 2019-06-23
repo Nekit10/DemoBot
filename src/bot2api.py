@@ -80,7 +80,7 @@ class Bot2API:
         self._command_listeners[command] = listener
         self.add_message_listener(self._command_listener_def, command, timeout_seconds)
 
-    def add_inline_listener(self, msg_id: int, listener, timeout_seconds: int = 1) -> None:
+    def add_inline_listener(self, msg_id: int, chat_id: int, listener, timeout_seconds: int = 1) -> None:
         """
         This methods adds `listener` as listener for running /`command`@BotName.
         UpdaterLoopThread will call listener(chat_id: int, from_id: int) for every new command.
@@ -93,8 +93,8 @@ class Bot2API:
         if timeout_seconds > 60:
             raise OverflowError('Timeout must be smaller than 1 minute')
 
-        self._inline_listeners[msg_id] = listener
-        self.add_message_listener(self._inline_listener_def, msg_id, timeout_seconds)
+        self._inline_listeners[str(msg_id) + '_' + str(chat_id)] = listener
+        self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         return self._respond_prepare(self._request_prepare('sendPoll', {
@@ -118,7 +118,7 @@ class Bot2API:
     def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
         pass
 
-    def _inline_listener_def(self, update: dict,  msg_id: int, timeout_seconds: int = 300) -> None:
+    def _inline_listener_def(self, update: dict,  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
         pass
 
     def _respond_prepare(self, response: requests.Response) -> dict:
