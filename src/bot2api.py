@@ -106,6 +106,27 @@ class Bot2API:
     def send_message(self, chat_id: int, message: str) -> dict:
         return self._respond_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
+    def send_inline_message(self, chat_id: int, message: str, options: list, listener, timeout_seconds: int):
+        inline_keyboard_items = []
+
+        for option in options:
+            inline_keyboard_items += [{
+                'text': option[0],
+                'callback_data': option[1]
+            }]
+
+        resp = self._respond_prepare(self._request_prepare('sendMessage', {
+            'chat_id': chat_id,
+            'text': message,
+            'reply_markup': {
+                'inline_keyboard': [inline_keyboard_items]
+            }
+        }))
+
+        self.add_inline_listener(resp['message_id'], resp['chat']['id'], listener, timeout_seconds)
+
+        return resp
+
     def kick_chat_member(self, chat_id: int, user_id: int) -> dict:
         pass
 
