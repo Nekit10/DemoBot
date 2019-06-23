@@ -172,5 +172,17 @@ class Bot2API:
         def __init__(self, cmd_queue: Queue):
             Thread.__init__(self)
 
-        def run(self):
+        def run(self) -> None:
             pass
+
+    class _MethodRunningThread(Thread):
+        def __init__(self, method, *args, **kwargs):
+            if not callable(method):
+                raise TypeError('Method must be callable')
+
+            self.method = method
+            self.args = args
+            self.kwargs = kwargs
+
+        def run(self) -> None:
+            self.method(*self.args, **self.kwargs)
