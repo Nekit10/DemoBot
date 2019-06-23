@@ -98,7 +98,7 @@ class Bot2API:
         if timeout_seconds > 60:
             raise OverflowError('Timeout must be smaller than 1 minute')
 
-        self._inline_listeners[str(msg_id) + '_' + str(chat_id)] = listener
+        self._inline_listeners[chat_id][msg_id] = listener
         self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
@@ -171,7 +171,14 @@ class Bot2API:
             pass
 
     def _inline_listener_def(self, update: dict,  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
-        pass
+        try:
+            query = update['callback_query']
+            thread = self._MethodRunningThread(self._inline_listeners[chat_id][msg_id], chat_id, query['data'])
+            thread.start()
+            thread.join(timeout_seconds)
+            thread.exit()
+        except (NameError, KeyError, IndexError):
+            pass
 
     def _respond_prepare(self, response: requests.Response) -> dict:
         pass
