@@ -16,6 +16,8 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
+import os
+import json
 from threading import Thread
 from multiprocessing import Queue
 
@@ -135,7 +137,10 @@ class Bot2API:
         }))
 
     def _load_config(self, filename: str) -> None:
-        pass
+        path = os.path.join(os.path.dirname(__file__), os.path.join('../', filename))
+
+        with open(path, 'r') as f:
+            self._config = json.loads(f.read())
 
     def _request_prepare(self, command_name: str, args: dict) -> requests.Response:
         pass
