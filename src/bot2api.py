@@ -148,7 +148,7 @@ class Bot2API:
         if args:
             url_ += '?'
 
-            for (arg_name, value) in args:
+            for arg_name, value in args.items():
                 val_ = str(value) if type(value) != dict and type(value) != list else json.dumps(value)
                 url_ += '{}={}&'.format(arg_name, val_)
 
@@ -157,7 +157,12 @@ class Bot2API:
         return self._run_request(url_)
 
     def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
-        pass
+        try:
+            text = update['message']['text']
+            if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
+                self._command_listeners[command]()
+        except (NameError, KeyError, IndexError):
+            pass
 
     def _inline_listener_def(self, update: dict,  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
         pass
