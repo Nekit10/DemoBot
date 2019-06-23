@@ -24,7 +24,6 @@ import requests
 from deprecated import deprecated
 
 from src import logger
-from src.threads.cmdthread import CmdHandlerThread
 
 @deprecated
 class TelegramBotException(Exception):
@@ -49,9 +48,6 @@ class TelegramBotAPI:
 
     chats = []
 
-    cmd_thread: CmdHandlerThread
-    cmd_queue: Queue
-
     polls: dict
     _POLLS_FILENAME: str = 'polls.json'
     _CHATS_FILENAME: str = 'chats.json'
@@ -71,11 +67,6 @@ class TelegramBotAPI:
         self.url = 'https://api.telegram.org/bot' + token
         self.polls = self._load_polls()
         self.chats = self._load_chats()
-
-        self.cmd_queue = Queue()
-        self.cmd_thread = CmdHandlerThread(self.cmd_queue)
-        self.cmd_thread.setDaemon(True)
-        self.cmd_thread.start()
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
         logger.logger.info('Starting poll (' + question + ') -> [' + ', '.join(answers) + ']; in chat #' + str(chat_id))
@@ -264,7 +255,7 @@ class TelegramBotAPI:
                     command = update['message']['text'].replace('@', ' ').split()[0][1:]
 
                     if command in self.command_listeners.keys():
-                        self.cmd_queue.put([self.command_listeners[command], [update['message']['chat']['id'], update['message']['from']['id']]])
+                        self.command_listeners[command](update['message']['chat']['id'], update['message']['from']['id'])
             except (NameError, IndexError, KeyError) as e:
                 logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
 
