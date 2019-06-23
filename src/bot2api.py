@@ -19,10 +19,12 @@ import inspect
 import os
 import json
 import ctypes
+import random
+import typing
 import re
 import threading
 from threading import Thread
-from multiprocessing import Queue
+from multiprocessing import Queue, Manager
 
 import requests
 
@@ -45,6 +47,7 @@ class Bot2API:
 
     _updater_loop: Thread
     _updater_command_queue: Queue
+    _updater_result_dict: typing.Dict
 
     def __init__(self, debug_mode: bool):
         config_filename = 'config.json' if not debug_mode else 'devconfig.json'
@@ -54,7 +57,8 @@ class Bot2API:
         self._url = 'https://api.telegram.org/bot' + self._token
 
         self._updater_command_queue = Queue()
-        self._updater_loop = self._UpdaterLoopThread(self._updater_command_queue)
+        self._updater_result_dict = Manager().dict()
+        self._updater_loop = self._UpdaterLoopThread(self._updater_command_queue, self._updater_result_dict)
         self._updater_loop.setDaemon(True)
         self._updater_loop.start()
 
@@ -190,14 +194,30 @@ class Bot2API:
         return resp_obj['result']
 
     def _run_request(self, url: str) -> requests.Response:
-        pass
+        req_id_ = random.randint(0, 2 ** 16)
+        while req_id_ in self._updater_result_dict.keys():
+            req_id_ = random.randint(0, 2 ** 16)
+
+        self._updater_command_queue.put([req_id_, url])
+
+        while req_id_ not in self._updater_result_dict.keys():
+            pass
+
+        result_ = self._updater_result_dict[req_id_].copy()
+        del self._updater_result_dict[req_id_]
+
+        return result_
 
     class _UpdaterLoopThread(Thread):
-        def __init__(self, cmd_queue: Queue):
+        def __init__(self, cmd_queue: Queue, result_dict: typing.Dict):
             Thread.__init__(self)
+            self.cmd_queue = cmd_queue
+            self.result_dict = result_dict
 
         def run(self) -> None:
-            pass
+            while True:
+                url, id_ = self.cmd_queue.get()
+                self.result_dict[id] = requests.get(url)
 
     class _MethodRunningThread(Thread):
         def __init__(self, method, *args, **kwargs):
