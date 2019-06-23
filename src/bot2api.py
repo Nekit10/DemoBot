@@ -102,14 +102,14 @@ class Bot2API:
         self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
-        return self._respond_prepare(self._request_prepare('sendPoll', {
+        return self._response_prepare(self._request_prepare('sendPoll', {
             'chat_id': chat_id,
             'question': question,
             'options': answers
         }))
 
     def send_message(self, chat_id: int, message: str) -> dict:
-        return self._respond_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
+        return self._response_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
     def send_inline_message(self, chat_id: int, message: str, options: list, listener, timeout_seconds: int):
         inline_keyboard_items = []
@@ -120,7 +120,7 @@ class Bot2API:
                 'callback_data': option[1]
             }]
 
-        resp = self._respond_prepare(self._request_prepare('sendMessage', {
+        resp = self._response_prepare(self._request_prepare('sendMessage', {
             'chat_id': chat_id,
             'text': message,
             'reply_markup': {
@@ -133,7 +133,7 @@ class Bot2API:
         return resp
 
     def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> dict:
-        return self._respond_prepare(self._request_prepare('kickChatMember', {
+        return self._response_prepare(self._request_prepare('kickChatMember', {
             'chat_id': chat_id,
             'user_id': user_id,
             'until_date': until_date
@@ -180,8 +180,14 @@ class Bot2API:
         except (NameError, KeyError, IndexError):
             pass
 
-    def _respond_prepare(self, response: requests.Response) -> dict:
-        pass
+    @staticmethod
+    def _response_prepare(response: requests.Response) -> dict:
+        resp_obj = response.json()
+
+        if response.status_code != 200 or not resp_obj['ok']:
+            raise ConnectionError('Error while working with Telegram Bot API (status code = ' + str(response.status_code) + '). ' + resp_obj['description'])
+
+        return resp_obj['result']
 
     def _run_request(self, url: str) -> requests.Response:
         pass
