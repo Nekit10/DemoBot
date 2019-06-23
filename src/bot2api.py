@@ -104,7 +104,7 @@ class Bot2API:
         }))
 
     def send_message(self, chat_id: int, message: str) -> dict:
-        pass
+        return self._respond_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
     def kick_chat_member(self, chat_id: int, user_id: int) -> dict:
         pass
