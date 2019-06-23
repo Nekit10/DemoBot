@@ -127,8 +127,12 @@ class Bot2API:
 
         return resp
 
-    def kick_chat_member(self, chat_id: int, user_id: int) -> dict:
-        pass
+    def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> dict:
+        return self._respond_prepare(self._request_prepare('kickChatMember', {
+            'chat_id': chat_id,
+            'user_id': user_id,
+            'until_date': until_date
+        }))
 
     def _load_config(self, filename: str) -> None:
         pass
