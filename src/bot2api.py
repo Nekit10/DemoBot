@@ -18,6 +18,9 @@
 
 import os
 import json
+import ctypes
+import re
+import threading
 from threading import Thread
 from multiprocessing import Queue
 
@@ -190,4 +193,24 @@ class Bot2API:
             self.kwargs = kwargs
 
         def run(self) -> None:
-            self.method(*self.args, **self.kwargs)
+            try:
+                self.method(*self.args, **self.kwargs)
+            finally:
+                pass  # end function here bro
+
+        def get_id(self):
+            if hasattr(self, '_thread_id'):
+                return self._thread_id
+            for id, thread in threading._active.items():
+                if thread is self:
+                    return id
+
+            raise NotImplementedError('Hmm I don\'t know what happening')
+
+        def exit(self):
+            thread_id = self.get_id()
+            res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+                                                             ctypes.py_object(SystemExit))
+            if res > 1:
+                ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+                raise NotImplementedError('I still don\'t know what happening')
