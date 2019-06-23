@@ -163,7 +163,7 @@ class Bot2API:
         try:
             text = update['message']['text']
             if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
-                self._command_listeners[command]()
+                thread = self._MethodRunningThread(self._command_listeners[command], update['chat']['id'], update['from']['id'])
         except (NameError, KeyError, IndexError):
             pass
 
