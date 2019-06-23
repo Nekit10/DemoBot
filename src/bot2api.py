@@ -143,7 +143,18 @@ class Bot2API:
             self._config = json.loads(f.read())
 
     def _request_prepare(self, command_name: str, args: dict) -> requests.Response:
-        pass
+        url_ = self._url + '/' + command_name
+
+        if args:
+            url_ += '?'
+
+            for (arg_name, value) in args:
+                val_ = str(value) if type(value) != dict and type(value) != list else json.dumps(value)
+                url_ += '{}={}&'.format(arg_name, val_)
+
+            url_ = url_[:-1]
+
+        return self._run_request(url_)
 
     def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
         pass
@@ -154,7 +165,7 @@ class Bot2API:
     def _respond_prepare(self, response: requests.Response) -> dict:
         pass
 
-    def _run_request(self) -> requests.Response:
+    def _run_request(self, url: srr) -> requests.Response:
         pass
 
     class _UpdaterLoopThread(Thread):
