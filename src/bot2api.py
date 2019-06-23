@@ -58,13 +58,43 @@ class Bot2API:
         This methods adds `listener` as listener for new updates.
         UpdaterLoopThread will call listener(update: dict, *args, **kwargs) for every new update
         """
-        pass
+
+        if not callable(listener):
+            raise TypeError('Message listener must be callable')
+
+        self._message_listeners += [[listener, args, kwargs]]
 
     def add_command_listener(self, command: str, listener, timeout_seconds: int = 300) -> None:
-        pass
+        """
+        This methods adds `listener` as listener for running /`command`@BotName.
+        UpdaterLoopThread will call listener(chat_id: int, from_id: int) for every new command.
+        Listener will be killed after timeout_seconds
+        """
+
+        if not callable(listener):
+            raise TypeError('Command listener must be callable')
+
+        if timeout_seconds > 600:
+            raise OverflowError('Timeout must be smaller than 10 minutes')
+
+        self._command_listeners[command] = listener
+        self.add_message_listener(self._command_listener_def, command, timeout_seconds)
 
     def add_inline_listener(self, msg_id: int, listener, timeout_seconds: int = 1) -> None:
-        pass
+        """
+        This methods adds `listener` as listener for running /`command`@BotName.
+        UpdaterLoopThread will call listener(chat_id: int, from_id: int) for every new command.
+        Listener will be killed after timeout_seconds
+        """
+
+        if not callable(listener):
+            raise TypeError('Command listener must be callable')
+
+        if timeout_seconds > 60:
+            raise OverflowError('Timeout must be smaller than 1 minute')
+
+        self._inline_listeners[msg_id] = listener
+        self.add_message_listener(self._inline_listener_def, msg_id, timeout_seconds)
 
     def start_poll(self, chat_id: int, question: str, answers: str) -> dict:
         pass
@@ -81,10 +111,10 @@ class Bot2API:
     def _request_prepare(self, request: str) -> None:
         pass
 
-    def _command_listener_def(self, update: dict, chat_id: int, from_user: int, command: str) -> None:
+    def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
         pass
 
-    def _inline_listener_def(self, update: dict, chat_id: int, data: str, msg_id: int) -> None:
+    def _inline_listener_def(self, update: dict,  msg_id: int, timeout_seconds: int = 300) -> None:
         pass
 
     def _respond_prepare(self) -> dict:
