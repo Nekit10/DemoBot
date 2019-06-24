@@ -27,6 +27,7 @@ from src.sysbugs.bugtrackerapi import report_custom_message
 
 polls: dict = {}
 config: dict = {}
+chats: list = []
 api: Bot2API
 
 POLLS_FILENAME: str = 'pollsinfo.json'
@@ -48,6 +49,39 @@ def init_bot(debug: bool = False):
     api.add_message_listener(process_update_and_start_poll)
     logger.logger.debug('Adding update listener that updates options of all polls')
     api.add_message_listener(update_poll_options)
+    logger.logger.debug('Adding update listener that save chats')
+    api.add_message_listener(get_new_chat_from_update)
+
+
+def load_chats():
+    global chats
+
+    path = os.path.join(os.path.dirname(__file__), '../', 'chats.json')
+    chats = []
+
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            chats = json.loads(f.read())
+
+
+def save_new_chat(chat: int):
+    global chats
+
+    path = os.path.join(os.path.dirname(__file__), '../', 'chats.json')
+    if chat not in chats:
+        chats.append(chat)
+
+        with open(path, 'w') as f:
+            f.write(json.dumps(chats))
+
+
+def get_new_chat_from_update(update: dict):
+    for key, data in update:
+        try:
+            if type(data) == dict:
+                save_new_chat(data['chat']['id'])
+        except (KeyError, NameError, IndexError):
+            pass
 
 
 def load_config(debug: bool = False) -> dict:
@@ -211,6 +245,7 @@ def main_loop() -> None:
     global polls
     logger.logger.info('Started main loop')
     load_polls_info()
+    load_chats()
 
     while True:
         check_old_polls()
