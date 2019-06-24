@@ -42,9 +42,9 @@ class Bot2API:
     _token: str
     _url: str
 
-    _message_listeners: list
-    _command_listeners: dict
-    _inline_listeners: dict
+    _message_listeners: list = []
+    _command_listeners: dict = []
+    _inline_listeners: dict = []
 
     _updater_loop: Thread
     _updater_command_queue: Queue
@@ -204,7 +204,7 @@ class Bot2API:
         while req_id_ not in self._updater_result_dict.keys():
             pass
 
-        result_ = self._updater_result_dict[req_id_].copy()
+        result_ = self._updater_result_dict[req_id_]
         del self._updater_result_dict[req_id_]
 
         return result_
@@ -221,14 +221,15 @@ class Bot2API:
         def run(self) -> None:
             while True:
                 try:
-                    url, id_ = self.cmd_queue.get(timeou=0.1)
-                    self.result_dict[id] = requests.get(url)
+                    id_, url = self.cmd_queue.get(timeout=0.1)
+                    self.result_dict[id_] = requests.get(url)
                 except Empty:
                     upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
+
                     for update in upd_resp:
                         for listener, args, kwargs in self.api._message_listeners:
                             try:
-                                listener(*args, **kwargs)
+                                listener(update, *args, **kwargs)
                             finally:
                                 pass
 
