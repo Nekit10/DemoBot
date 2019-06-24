@@ -32,6 +32,10 @@ import requests
 import src.logger
 
 
+class AutoDelete(Exception):
+    pass
+
+
 class Bot2API:
     """
     This class works with Telegram Bot API using HTTP-requests ans `requests` python library
@@ -227,11 +231,17 @@ class Bot2API:
                     upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
 
                     for update in upd_resp:
-                        for listener, args, kwargs in self.api._message_listeners:
+                        del_ = []
+                        for i in len(self.api._message_listeners):
+                            listener, args, kwargs = self.api._message_listeners[i]
                             try:
                                 listener(update, *args, **kwargs)
+                            except AutoDelete:
+                                del_.append(i)
                             finally:
                                 pass
+                        for i in del_:
+                            del self.api._message_listeners[i]
 
     class _MethodRunningThread(Thread):
         def __init__(self, method, *args, **kwargs):
