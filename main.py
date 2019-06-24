@@ -63,7 +63,7 @@ if __name__ == '__main__':
     logger.logger.info('Starting bot, version: ' + VERSION)
 
     log_server_info()
-    logger.logger.debug('Debug mode is' + ('on' if DEBUG_MODE else 'off'))
+    logger.logger.debug('Debug mode is ' + ('on' if DEBUG_MODE else 'off'))
     demobot.init_bot(DEBUG_MODE)
 
     logger.logger.debug('Full run command (argc = ' + str(len(sys.argv)) + ') : ' + ' '.join(sys.argv))
