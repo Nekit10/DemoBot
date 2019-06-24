@@ -23,6 +23,7 @@ import random
 import typing
 import re
 import threading
+from _queue import Empty
 from threading import Thread
 from multiprocessing import Queue, Manager
 
@@ -58,7 +59,7 @@ class Bot2API:
 
         self._updater_command_queue = Queue()
         self._updater_result_dict = Manager().dict()
-        self._updater_loop = self._UpdaterLoopThread(self._updater_command_queue, self._updater_result_dict)
+        self._updater_loop = self._UpdaterLoopThread(self._updater_command_queue, self._updater_result_dict, self)
         self._updater_loop.setDaemon(True)
         self._updater_loop.start()
 
@@ -209,15 +210,27 @@ class Bot2API:
         return result_
 
     class _UpdaterLoopThread(Thread):
-        def __init__(self, cmd_queue: Queue, result_dict: typing.Dict):
+        _offset: int = 0
+
+        def __init__(self, cmd_queue: Queue, result_dict: typing.Dict, api: object):
             Thread.__init__(self)
             self.cmd_queue = cmd_queue
             self.result_dict = result_dict
+            self.api = api
 
         def run(self) -> None:
             while True:
-                url, id_ = self.cmd_queue.get()
-                self.result_dict[id] = requests.get(url)
+                try:
+                    url, id_ = self.cmd_queue.get(timeou=0.1)
+                    self.result_dict[id] = requests.get(url)
+                except Empty:
+                    upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
+                    for update in upd_resp:
+                        for listener, args, kwargs in self.api._message_listeners:
+                            try:
+                                listener(*args, **kwargs)
+                            finally:
+                                pass
 
     class _MethodRunningThread(Thread):
         def __init__(self, method, *args, **kwargs):
