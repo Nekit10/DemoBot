@@ -306,6 +306,8 @@ class Bot2API:
 
     class _MethodRunningThread(Thread):
         def __init__(self, api: object, i: int, method, *args, **kwargs):
+            Thread.__init__(self)
+
             logger.logger.info('Creating thread for running method')
 
             if not callable(method):
