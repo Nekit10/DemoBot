@@ -127,6 +127,8 @@ class Bot2API:
 
         logger.logger.info('Adding listener for inline query callback (msg_id = ' + str(msg_id) + ') in chat #' + str(chat_id))
 
+        if chat_id not in self._inline_listeners.keys():
+            self._inline_listeners[chat_id] = {}
         self._inline_listeners[chat_id][msg_id] = listener
         self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
@@ -207,7 +209,7 @@ class Bot2API:
             logger.logger.info('Checking update for command /' + command)
             if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
                 logger.logger.info('Found command /' + command)
-                thread = self._MethodRunningThread(self, -1, self._command_listeners[command], update['chat']['id'], update['from']['id'])
+                thread = self._MethodRunningThread(self, -1, self._command_listeners[command], update['message']['chat']['id'], update['message']['from']['id'])
                 thread.setDaemon(True)
                 thread.start()
                 thread.join(timeout_seconds)
@@ -292,8 +294,7 @@ class Bot2API:
                             for i in range(len(self.api._message_listeners)):
                                 listener, args, kwargs = self.api._message_listeners[i]
                                 try:
-                                    thread = self.api._MethodRunningThread(self.api, i, listener, *args, **kwargs)
-                                    print(type(thread))
+                                    thread = self.api._MethodRunningThread(self.api, i, listener, update, *args, **kwargs)
                                     thread.setDaemon(True)
                                     thread.start()
                                 except Exception as e:
@@ -308,7 +309,7 @@ class Bot2API:
         def __init__(self, api: object, i: int, method, *args, **kwargs):
             Thread.__init__(self)
 
-            logger.logger.info('Creating thread for running method')
+            logger.logger.info('Creating thread for running method ' + method.__name__)
 
             if not callable(method):
                 raise TypeError('Method must be callable')
@@ -359,4 +360,6 @@ class Bot2API:
             logger.logger.fatal('Can\'t get thread\'s id')
             raise SystemError('Thread does not have id (???)')
 
-   
+        def exit(self):
+            if self.isAlive():
+                self._async_raise(self.get_id(), InterruptedError)

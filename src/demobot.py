@@ -19,6 +19,7 @@
 import json
 import os
 import time
+import threading
 
 from src import logger
 from src.syslang import langapi
@@ -101,8 +102,9 @@ def load_config(debug: bool = False) -> dict:
     config_filename = 'config.json' if not debug else 'devconfig.json'
     logger.logger.info('Loading config from ' + config_filename + ' in demobot.py')
     with open(config_filename, 'r') as f:
-        return json.loads(f.read())
+        res_ = json.loads(f.read())
     logger.logger.info('Succeddfully loaded config')
+    return res_
 
 
 def process_update_and_start_poll(update: dict) -> None:
@@ -202,7 +204,6 @@ def check_old_polls():
     remove = []
 
     for poll_id in polls.keys():
-        logger.logger.trace('Checking poll with id ' + str(poll_id))
         poll_options = polls[poll_id]['options']
         if (time.time() - polls[poll_id]['date']) >= 12 * 3600 and poll_options[0]['voter_count'] > poll_options[1]['voter_count']:
             kick_candidate(poll_id)
@@ -216,11 +217,18 @@ def check_old_polls():
 
 
 value_ = None
+value_c = threading.Condition()
 
 
 def respond_checking_processor(update: dict, chat_id: int, user_id: int):
     global value_
 
+    while value_ is None:
+        try:
+            value_c.wait()
+        except RuntimeError:
+            pass
+    value_c.acquire()
     logger.logger.info('Checking new update for response of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
 
     try:
@@ -228,19 +236,27 @@ def respond_checking_processor(update: dict, chat_id: int, user_id: int):
         if msg['from']['id'] == user_id and msg['chat']['id'] == chat_id:
             logger.logger.info('Found reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
             value_ = msg['text']
+            value_c.release()
             raise AutoDelete()
     except (NameError, KeyError, IndexError) as e:
+        value_c.release()
         logger.logger.warning('Ignored ' + str(type(e)) + ' in checking update for response: ' + str(e))
 
 
 def wait_for_user_response(chat_id: int, user_id: int) -> str:
+    global value_
+
+    value_c.acquire()
     logger.logger.info('Adding handler of reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
-    api.add_message_listener(report_custom_message, chat_id, user_id)
+    api.add_message_listener(respond_checking_processor, chat_id, user_id)
     logger.logger.info('Added handler of user (id = ' + str(user_id) + ') in chat #' + str(chat_id) + ' , starting waiting')
     while value_ is None:
         pass
     logger.logger.info('Returning reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
-    return value_
+    copy_, value_ = value_, None
+    value_c.notify_all()
+    value_c.release()
+    return copy_
 
 
 def report_command_processor(chat_id: int, from_id: int):
