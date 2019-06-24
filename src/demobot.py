@@ -223,12 +223,6 @@ value_c = threading.Condition()
 def respond_checking_processor(update: dict, chat_id: int, user_id: int):
     global value_
 
-    while value_ is None:
-        try:
-            value_c.wait()
-        except RuntimeError:
-            pass
-    value_c.acquire()
     logger.logger.info('Checking new update for response of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
 
     try:
@@ -236,10 +230,8 @@ def respond_checking_processor(update: dict, chat_id: int, user_id: int):
         if msg['from']['id'] == user_id and msg['chat']['id'] == chat_id:
             logger.logger.info('Found reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
             value_ = msg['text']
-            value_c.release()
             raise AutoDelete()
     except (NameError, KeyError, IndexError) as e:
-        value_c.release()
         logger.logger.warning('Ignored ' + str(type(e)) + ' in checking update for response: ' + str(e))
 
 
