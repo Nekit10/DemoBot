@@ -32,6 +32,7 @@ import requests
 import sys
 
 from src import logger
+from sysbugs import bugtrackerapi
 
 
 class AutoDelete(Exception):
@@ -47,8 +48,10 @@ class Bot2API:
     _config: dict
     _token: str
     _url: str
+    _url_c = threading.Condition()
 
     _message_listeners: list = []
+    _message_listeners_c = threading.Condition()
     _command_listeners: dict = {}
     _inline_listeners: dict = {}
 
@@ -64,7 +67,9 @@ class Bot2API:
         self._load_config(config_filename)
 
         self._token = self._config['token']
+        self._url_c.acquire()
         self._url = 'https://api.telegram.org/bot' + self._token
+        self._url_c.release()
 
         self._updater_command_queue = Queue()
         self._updater_result_dict = Manager().dict()
@@ -85,7 +90,9 @@ class Bot2API:
 
         logger.logger.info('Adding new message listener')
 
+        self._message_listeners_c.acquire()
         self._message_listeners += [[listener, args, kwargs]]
+        self._message_listeners_c.release()
 
     def add_command_listener(self, command: str, listener, timeout_seconds: int = 300) -> None:
         """
@@ -177,7 +184,9 @@ class Bot2API:
         logger.logger.info('Successfully loaded config in api')
 
     def _request_prepare(self, command_name: str, args: dict) -> requests.Response:
+        self._url_c.acquire()
         url_ = self._url + '/' + command_name
+        self._url_c.release()
 
         logger.logger.info('Preparing request for command ' + command_name)
 
@@ -198,7 +207,7 @@ class Bot2API:
             logger.logger.info('Checking update for command /' + command)
             if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
                 logger.logger.info('Found command /' + command)
-                thread = self._MethodRunningThread(self._command_listeners[command], update['chat']['id'], update['from']['id'])
+                thread = self._MethodRunningThread(self, -1, self._command_listeners[command], update['chat']['id'], update['from']['id'])
                 thread.setDaemon(True)
                 thread.start()
                 thread.join(timeout_seconds)
@@ -210,7 +219,7 @@ class Bot2API:
         try:
             logger.logger.info('Checking update for inline query callback')
             query = update['callback_query']
-            thread = self._MethodRunningThread(self._inline_listeners[chat_id][msg_id], chat_id, query['data'])
+            thread = self._MethodRunningThread(self, -1, self._inline_listeners[chat_id][msg_id], chat_id, query['data'])
             thread.setDaemon(True)
             thread.start()
             thread.join(timeout_seconds)
@@ -250,7 +259,7 @@ class Bot2API:
         return result_
 
     class _UpdaterLoopThread(Thread):
-        _offset: int = 0
+        _offset: int = 605766741  # Why not?
 
         def __init__(self, cmd_queue: Queue, result_dict: typing.Dict, api: object):
             Thread.__init__(self)
@@ -270,43 +279,51 @@ class Bot2API:
                         self.result_dict[id_] = requests.get(url)
                     except Empty:
                         logger.logger.trace('Sending new updates request')
+                        self.api._url_c.acquire()
                         upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
+                        self.api._url_c.release()
                         if upd_resp:
                             self._offset = upd_resp[-1]['update_id'] + 1
                             logger.logger.trace('Updated offset to ' + str(self._offset))
 
                         for update in upd_resp:
                             del_ = []
+                            self.api._message_listeners_c.acquire()
                             for i in range(len(self.api._message_listeners)):
                                 listener, args, kwargs = self.api._message_listeners[i]
                                 try:
-                                    listener(update, *args, **kwargs)
-                                except AutoDelete:
-                                    logger.logger.debug('Adding listener with id ' + str(i) + ' to delete queue')
-                                    del_.append(i)
+                                    thread = self.api._MethodRunningThread(self.api, i, listener, *args, **kwargs)
+                                    print(type(thread))
+                                    thread.setDaemon(True)
+                                    thread.start()
                                 except Exception as e:
                                     logger.logger.error('Got ' + str(type(e)) + ' while running listener: ' + str(e))
-                            for i in del_:
-                                del self.api._message_listeners[i]
+                            self.api._message_listeners_c.release()
             except Exception as e:
                 logger.logger.fatal('Got ' + str(type(e)) + ' in UpdaterLoop thread!!! Exception: ' + str(e))
-                sys.exit(0)
+                bugtrackerapi.report_exception(e)
+                raise e
 
     class _MethodRunningThread(Thread):
-        def __init__(self, method, *args, **kwargs):
-
+        def __init__(self, api: object, i: int, method, *args, **kwargs):
             logger.logger.info('Creating thread for running method')
 
             if not callable(method):
                 raise TypeError('Method must be callable')
 
             self.method = method
+            self.api = api
+            self.i = i
             self.args = args
             self.kwargs = kwargs
 
         def run(self) -> None:
             try:
                 self.method(*self.args, **self.kwargs)
+            except AutoDelete:
+                self.api._message_listeners_c.acquire()
+                del self.api._message_listeners[self.i]
+                self.api._message_listeners_c.release()
             finally:
                 pass  # end function here bro
 
@@ -340,5 +357,4 @@ class Bot2API:
             logger.logger.fatal('Can\'t get thread\'s id')
             raise SystemError('Thread does not have id (???)')
 
-        def exit(self):
-            self._async_raise(self.get_id(), InterruptedError)
+   
