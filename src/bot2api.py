@@ -116,7 +116,7 @@ class Bot2API:
     def send_message(self, chat_id: int, message: str) -> dict:
         return self._response_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
-    def send_inline_message(self, chat_id: int, message: str, options: list, listener, timeout_seconds: int):
+    def send_inline_message(self, chat_id: int, message: str, options: list, listener, timeout_seconds: int = 1):
         inline_keyboard_items = []
 
         for option in options:
