@@ -17,10 +17,12 @@
 #    Copyright (c) 2019 Nikita Serba
 
 import platform
+import json
 import sys
+import os
 
 from src import demobot, logger
-from src.botapi import TelegramBotAPI
+from src.bot2api import Bot2API
 from src.sysbugs.bugtrackerapi import report_exception
 from src.syslang.langapi import load_chat_langs, msg_version_info
 
@@ -42,6 +44,16 @@ def log_server_info():
                  '\nPython version: ' + platform.python_version())
 
 
+def load_chats():
+    path = os.path.join(os.path.dirname(__file__), 'chats.json')
+
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.loads(f.read())
+    else:
+        return []
+
+
 if __name__ == '__main__':
     logger.logger.info('Starting bot')
 
@@ -49,8 +61,8 @@ if __name__ == '__main__':
     demobot.init_bot(DEBUG_MODE)
 
     if len(sys.argv) > 1 and sys.argv[1] == '--version-notify':
-        api = TelegramBotAPI(demobot.config['token'], DEBUG_MODE)
-        for chat in api.chats:
+        api = Bot2API(DEBUG_MODE)
+        for chat in load_chats():
             api.send_message(chat, msg_version_info(chat))
         sys.exit(0)
 
