@@ -76,7 +76,7 @@ def save_new_chat(chat: int):
 
 
 def get_new_chat_from_update(update: dict):
-    for key, data in update:
+    for key, data in update.items():
         try:
             if type(data) == dict:
                 save_new_chat(data['chat']['id'])

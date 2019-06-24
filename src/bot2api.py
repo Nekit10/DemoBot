@@ -47,8 +47,8 @@ class Bot2API:
     _url: str
 
     _message_listeners: list = []
-    _command_listeners: dict = []
-    _inline_listeners: dict = []
+    _command_listeners: dict = {}
+    _inline_listeners: dict = {}
 
     _updater_loop: Thread
     _updater_command_queue: Queue
@@ -173,6 +173,7 @@ class Bot2API:
             text = update['message']['text']
             if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
                 thread = self._MethodRunningThread(self._command_listeners[command], update['chat']['id'], update['from']['id'])
+                thread.setDaemon(True)
                 thread.start()
                 thread.join(timeout_seconds)
                 thread.exit()
@@ -183,6 +184,7 @@ class Bot2API:
         try:
             query = update['callback_query']
             thread = self._MethodRunningThread(self._inline_listeners[chat_id][msg_id], chat_id, query['data'])
+            thread.setDaemon(True)
             thread.start()
             thread.join(timeout_seconds)
             thread.exit()
@@ -229,10 +231,12 @@ class Bot2API:
                     self.result_dict[id_] = requests.get(url)
                 except Empty:
                     upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
+                    if upd_resp:
+                        self._offset = upd_resp[-1]['update_id'] + 1
 
                     for update in upd_resp:
                         del_ = []
-                        for i in len(self.api._message_listeners):
+                        for i in range(len(self.api._message_listeners)):
                             listener, args, kwargs = self.api._message_listeners[i]
                             try:
                                 listener(update, *args, **kwargs)
