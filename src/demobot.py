@@ -22,7 +22,7 @@ import time
 
 from src import logger
 from src.syslang import langapi
-from src.bot2api import Bot2API
+from src.bot2api import Bot2API, AutoDelete
 from src.sysbugs.bugtrackerapi import report_custom_message
 
 polls: dict = {}
@@ -155,39 +155,39 @@ def check_old_polls():
         del polls[i]
 
 
+value_ = None
+
+
+def respond_checking_processor(update: dict, chat_id: int, user_id: int):
+    global value_
+
+    try:
+        msg = update['message']
+        if msg['from']['id'] == user_id and msg['chat']['id'] == chat_id:
+            value_ = msg['text']
+            raise AutoDelete()
+    except (NameError, KeyError, IndexError):
+        pass
+
+
+def wait_for_user_response(chat_id: int, user_id: int) -> str:
+    api.add_message_listener(report_custom_message, chat_id, user_id)
+    while value_ is None:
+        pass
+    return value_
+
+
 def report_command_processor(chat_id: int, from_id: int):
     logger.logger.info('Starting processor for report command')
-    api.get_new_updates()
     api.send_message(chat_id, langapi.msg_descrb_problem(chat_id))
 
-    bug_report_msg = ''
-
-    while bug_report_msg == '':
-        updates_ = api.get_new_updates()
-        for update_ in updates_:
-            try:
-                if update_['message']['chat']['id'] == chat_id and update_['message']['from']['id'] == from_id:
-                    bug_report_msg = update_['message']['text']
-                    break
-            except (NameError, IndexError, KeyError) as e:
-                logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
+    bug_report_msg = wait_for_user_response(chat_id, from_id)
 
     logger.logger.debug('Asking for contact info')
 
-    api.get_new_updates()
     api.send_message(chat_id, langapi.msg_give_contact_info(chat_id))
 
-    from_msg = ''
-
-    while from_msg == '':
-        updates_ = api.get_new_updates()
-        for update_ in updates_:
-            try:
-                if update_['message']['chat']['id'] == chat_id and update_['message']['from']['id'] == from_id:
-                    from_msg = update_['message']['text']
-                    break
-            except (NameError, IndexError, KeyError) as e:
-                logger.logger.trace('Ignored name exception in checking report command: ' + str(e))
+    from_msg = wait_for_user_response(chat_id, from_id)
 
     logger.logger.debug('Sending bug report')
 
