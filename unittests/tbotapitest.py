@@ -47,10 +47,7 @@ class TelegramBotAPITests(unittest.TestCase):
     def setUpClass(cls):
         logger.logger = LoggerFake()
 
-        with open('../devconfig.json', 'r') as f:
-            token = json.loads(f.read())['token']
-
-        cls.botapi = Bot2API(token, True)
+        cls.botapi = Bot2API(True)
         try:
             cls.botapi.send_message(TelegramBotAPITests.chat_id,
                                      'Starting testing DemoBot. Please, do NOT DO ANYTHING HERE UNTIL ALL TESTS END. '
@@ -87,7 +84,6 @@ class TelegramBotAPITests(unittest.TestCase):
 
     def test_send_message_to_wrong_chat(self):
         self.assertRaises(ConnectionError, self.botapi.send_message, -1, "Test")
-        self.assertRaises(ConnectionError, self.botapi.send_error_message, -1, Exception())
         self.assertRaises(ConnectionError, self.botapi.start_poll, -1, "Test", ["Yes", "No"])
 
     def test_poll_no_answers(self):
