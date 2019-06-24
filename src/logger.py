@@ -39,11 +39,14 @@ logger: AppLogger
 
 
 def clean_old_logs():
-    log_dir = 'logs/'
-    files = [f for f in os.listdir(log_dir) if os.path.isfile(os.path.join(log_dir, f)) and f.endswith('.log') and not f.startswith('latest')]
-    if len(files) > 4:
-        for log_file in files[4:]:
-            os.remove(os.path.join(log_dir, log_file))
+    try:
+        log_dir = 'logs/'
+        files = [f for f in os.listdir(log_dir) if os.path.isfile(os.path.join(log_dir, f)) and f.endswith('.log') and not f.startswith('latest')]
+        if len(files) > 4:
+            for log_file in files[4:]:
+                os.remove(os.path.join(log_dir, log_file))
+    except PermissionError:
+        pass
 
 
 def init():
