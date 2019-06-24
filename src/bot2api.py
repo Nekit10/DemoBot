@@ -15,6 +15,7 @@
 #    along with DemocraticBot.  If not, see <https://www.gnu.org/licenses/>.
 #
 #    Copyright (c) 2019 Nikita Serba
+
 import inspect
 import os
 import json
@@ -28,8 +29,9 @@ from threading import Thread
 from multiprocessing import Queue, Manager
 
 import requests
+import sys
 
-import src.logger
+from src import logger
 
 
 class AutoDelete(Exception):
@@ -55,6 +57,9 @@ class Bot2API:
     _updater_result_dict: typing.Dict
 
     def __init__(self, debug_mode: bool):
+
+        logger.logger.info('Creating new Bot2API instance')
+
         config_filename = 'config.json' if not debug_mode else 'devconfig.json'
         self._load_config(config_filename)
 
@@ -63,9 +68,11 @@ class Bot2API:
 
         self._updater_command_queue = Queue()
         self._updater_result_dict = Manager().dict()
+        logger.logger.info('Setuping UpdaterLoop thread')
         self._updater_loop = self._UpdaterLoopThread(self._updater_command_queue, self._updater_result_dict, self)
         self._updater_loop.setDaemon(True)
         self._updater_loop.start()
+        logger.logger.info('UpdaterLoop thread was successfully started')
 
     def add_message_listener(self, listener, *args, **kwargs) -> None:
         """
@@ -75,6 +82,8 @@ class Bot2API:
 
         if not callable(listener):
             raise TypeError('Message listener must be callable')
+
+        logger.logger.info('Adding new message listener')
 
         self._message_listeners += [[listener, args, kwargs]]
 
@@ -90,6 +99,8 @@ class Bot2API:
 
         if timeout_seconds > 600:
             raise OverflowError('Timeout must be smaller than 10 minutes')
+
+        logger.logger.info('Adding listener for command /' + command)
 
         self._command_listeners[command] = listener
         self.add_message_listener(self._command_listener_def, command, timeout_seconds)
@@ -107,10 +118,13 @@ class Bot2API:
         if timeout_seconds > 60:
             raise OverflowError('Timeout must be smaller than 1 minute')
 
+        logger.logger.info('Adding listener for inline query callback (msg_id = ' + str(msg_id) + ') in chat #' + str(chat_id))
+
         self._inline_listeners[chat_id][msg_id] = listener
         self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
     def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
+        logger.logger.info('Starting poll in chat #' + str(chat_id) + ' with question "' + question + '" and options [' + ', '.join(answers) + ']')
         return self._response_prepare(self._request_prepare('sendPoll', {
             'chat_id': chat_id,
             'question': question,
@@ -118,10 +132,13 @@ class Bot2API:
         }))
 
     def send_message(self, chat_id: int, message: str) -> dict:
+        logger.logger.info('Sending message "' + message + '" in chat #' + str(chat_id))
         return self._response_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
     def send_inline_message(self, chat_id: int, message: str, options: list, listener, timeout_seconds: int = 1):
         inline_keyboard_items = []
+
+        logger.logger.info('Sending inline message "' + message + '" in chat #' + str(chat_id) + '; options: ' + str(options))
 
         for option in options:
             inline_keyboard_items += [{
@@ -142,6 +159,8 @@ class Bot2API:
         return resp
 
     def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> dict:
+        logger.logger.info('Kicking user with id ' + str(user_id) + ' in chat #' + str(chat_id) + ' until ' + str(until_date))
+
         return self._response_prepare(self._request_prepare('kickChatMember', {
             'chat_id': chat_id,
             'user_id': user_id,
@@ -151,11 +170,16 @@ class Bot2API:
     def _load_config(self, filename: str) -> None:
         path = os.path.join(os.path.dirname(__file__), os.path.join('../', filename))
 
+        logger.logger.info('Loading config in api from ' + path)
+
         with open(path, 'r') as f:
             self._config = json.loads(f.read())
+        logger.logger.info('Successfully loaded config in api')
 
     def _request_prepare(self, command_name: str, args: dict) -> requests.Response:
         url_ = self._url + '/' + command_name
+
+        logger.logger.info('Preparing request for command ' + command_name)
 
         if args:
             url_ += '?'
@@ -171,7 +195,9 @@ class Bot2API:
     def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
         try:
             text = update['message']['text']
+            logger.logger.info('Checking update for command /' + command)
             if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
+                logger.logger.info('Found command /' + command)
                 thread = self._MethodRunningThread(self._command_listeners[command], update['chat']['id'], update['from']['id'])
                 thread.setDaemon(True)
                 thread.start()
@@ -182,6 +208,7 @@ class Bot2API:
 
     def _inline_listener_def(self, update: dict,  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
         try:
+            logger.logger.info('Checking update for inline query callback')
             query = update['callback_query']
             thread = self._MethodRunningThread(self._inline_listeners[chat_id][msg_id], chat_id, query['data'])
             thread.setDaemon(True)
@@ -193,6 +220,8 @@ class Bot2API:
 
     @staticmethod
     def _response_prepare(response: requests.Response) -> dict:
+        logger.logger.info('Preparing response for url: ' + response.url)
+
         resp_obj = response.json()
 
         if response.status_code != 200 or not resp_obj['ok']:
@@ -201,14 +230,19 @@ class Bot2API:
         return resp_obj['result']
 
     def _run_request(self, url: str) -> requests.Response:
+        logger.logger.info('Adding request with url ' + url + ' to command queue')
         req_id_ = random.randint(0, 2 ** 16)
         while req_id_ in self._updater_result_dict.keys():
             req_id_ = random.randint(0, 2 ** 16)
+
+        logger.logger.debug('Choosed id ' + str(req_id_))
 
         self._updater_command_queue.put([req_id_, url])
 
         while req_id_ not in self._updater_result_dict.keys():
             pass
+
+        logger.logger.info('Got resulr for request with id ' + str(req_id_))
 
         result_ = self._updater_result_dict[req_id_]
         del self._updater_result_dict[req_id_]
@@ -220,35 +254,49 @@ class Bot2API:
 
         def __init__(self, cmd_queue: Queue, result_dict: typing.Dict, api: object):
             Thread.__init__(self)
+
+            logger.logger.info('Creating UpdateLoop thread instance')
+
             self.cmd_queue = cmd_queue
             self.result_dict = result_dict
             self.api = api
 
         def run(self) -> None:
-            while True:
-                try:
-                    id_, url = self.cmd_queue.get(timeout=0.1)
-                    self.result_dict[id_] = requests.get(url)
-                except Empty:
-                    upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
-                    if upd_resp:
-                        self._offset = upd_resp[-1]['update_id'] + 1
+            try:
+                while True:
+                    try:
+                        id_, url = self.cmd_queue.get(timeout=0.1)
+                        logger.logger.info('Got command ' + url + ' with id ' + str(id_))
+                        self.result_dict[id_] = requests.get(url)
+                    except Empty:
+                        logger.logger.trace('Sending new updates request')
+                        upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
+                        if upd_resp:
+                            self._offset = upd_resp[-1]['update_id'] + 1
+                            logger.logger.trace('Updated offset to ' + str(self._offset))
 
-                    for update in upd_resp:
-                        del_ = []
-                        for i in range(len(self.api._message_listeners)):
-                            listener, args, kwargs = self.api._message_listeners[i]
-                            try:
-                                listener(update, *args, **kwargs)
-                            except AutoDelete:
-                                del_.append(i)
-                            finally:
-                                pass
-                        for i in del_:
-                            del self.api._message_listeners[i]
+                        for update in upd_resp:
+                            del_ = []
+                            for i in range(len(self.api._message_listeners)):
+                                listener, args, kwargs = self.api._message_listeners[i]
+                                try:
+                                    listener(update, *args, **kwargs)
+                                except AutoDelete:
+                                    logger.logger.debug('Adding listener with id ' + str(i) + ' to delete queue')
+                                    del_.append(i)
+                                except Exception as e:
+                                    logger.logger.error('Got ' + str(type(e)) + ' while running listener: ' + str(e))
+                            for i in del_:
+                                del self.api._message_listeners[i]
+            except Exception as e:
+                logger.logger.fatal('Got ' + str(type(e)) + ' in UpdaterLoop thread!!! Exception: ' + str(e))
+                sys.exit(0)
 
     class _MethodRunningThread(Thread):
         def __init__(self, method, *args, **kwargs):
+
+            logger.logger.info('Creating thread for running method')
+
             if not callable(method):
                 raise TypeError('Method must be callable')
 
@@ -270,13 +318,16 @@ class Bot2API:
             res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(exctype))
 
             if res == 0:
+                logger.logger.fatal('Can\'t exit thread')
                 raise ValueError('Invalid thread id')
             elif res != 1:
+                logger.logger.fatal('Can\'t exit thread')
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
                 raise SystemError('PyThreadState_SetAsyncExc failed')
 
         def get_id(self):
             if not self.isAlive():
+                logger.logger.fatal('Can\'t get thread\'s id')
                 raise threading.ThreadError('Thread is not active')
 
             if hasattr(self, "_thread_id"):
@@ -286,6 +337,7 @@ class Bot2API:
                     self._thread_id = tid
                     return tid
 
+            logger.logger.fatal('Can\'t get thread\'s id')
             raise SystemError('Thread does not have id (???)')
 
         def exit(self):

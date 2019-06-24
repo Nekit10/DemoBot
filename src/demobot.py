@@ -57,38 +57,52 @@ def load_chats():
     global chats
 
     path = os.path.join(os.path.dirname(__file__), '../', 'chats.json')
+
+    logger.logger.info('Loading chats from ' + path)
+
     chats = []
 
     if os.path.exists(path):
         with open(path, 'r') as f:
             chats = json.loads(f.read())
+        logger.logger.info('Successfully loaded chats')
+    else:
+        logger.logger.debug('Chats file does not exist')
 
 
 def save_new_chat(chat: int):
     global chats
 
+    logger.logger.info('Trying to safe new chat #' + str(chat))
+
     path = os.path.join(os.path.dirname(__file__), '../', 'chats.json')
     if chat not in chats:
         chats.append(chat)
 
+        logger.logger.info('Saving chats to ' + path)
         with open(path, 'w') as f:
             f.write(json.dumps(chats))
+        logger.logger.info('Successfully saved chats')
+    else:
+        logger.logger.info('Chat is already in database')
 
 
 def get_new_chat_from_update(update: dict):
+    logger.logger.info('Starting checking update for new chats')
     for key, data in update.items():
         try:
             if type(data) == dict:
                 save_new_chat(data['chat']['id'])
-        except (KeyError, NameError, IndexError):
-            pass
+        except (KeyError, NameError, IndexError) as e:
+            logger.logger.warning('Ignored ' + str(type(e)) + ' in checking update for new chats: ' + str(e))
 
 
 def load_config(debug: bool = False) -> dict:
     config_filename = 'config.json' if not debug else 'devconfig.json'
-    logger.logger.debug('Using ' + config_filename + ' as config file')
+    logger.logger.info('Loading config from ' + config_filename + ' in demobot.py')
     with open(config_filename, 'r') as f:
         return json.loads(f.read())
+    logger.logger.info('Succeddfully loaded config')
 
 
 def process_update_and_start_poll(update: dict) -> None:
@@ -106,6 +120,7 @@ def process_update_and_start_poll(update: dict) -> None:
             logger.logger.info('Found kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
 
             start_poll(chat_id, name, user_id)
+            logger.logger.info('Ended starting poll for kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
     except (NameError, IndexError, KeyError) as e:
         logger.logger.trace('Ignored name exception in checking poll candidates: ' + str(e))
 
@@ -132,32 +147,43 @@ def load_polls_info():
 
     path = os.path.join(os.path.dirname(__file__), '../', POLLS_FILENAME)
 
+    logger.logger.info('Loading polls info from ' + path)
+
     if os.path.exists(path):
         with open(path, 'r') as f:
             dict_ = json.loads(f.read())
             polls = {}
             for key, value in dict_:
                 polls[int(key)] = value
+        logger.logger.info('Successfully loaded!')
+    else:
+        logger.logger.debug('Poll file doest not exist')
 
 
 def save_polls():
     path = os.path.join(os.path.dirname(__file__), '../', POLLS_FILENAME)
 
-    if os.path.exists(path):
-        with open(path, 'w') as f:
-            f.write(json.dumps(polls))
+    logger.logger.info('Saving polls to ' + path)
+
+    with open(path, 'w') as f:
+        f.write(json.dumps(polls))
+
+    logger.logger.info('Successfully saved polls')
 
 
 def update_poll_options(update: dict):
     global polls
 
+    logger.logger.info('Checking new update for new poll result')
+
     try:
         id_ = int(update['poll']['id'])
         if id_ in polls.keys():
             polls[id_]['options'] = update['poll']['options']
+            logger.logger.info('Successfully updated options of poll with id ' + str(id_))
         save_polls()
-    except (NameError, KeyError, IndexError):
-        pass
+    except (NameError, KeyError, IndexError) as e:
+        logger.logger.warning('Ignored ' + str(type(e)) + ' in updating options of polls: ' + str(e))
 
 
 def kick_candidate(poll_id: int):
@@ -195,19 +221,25 @@ value_ = None
 def respond_checking_processor(update: dict, chat_id: int, user_id: int):
     global value_
 
+    logger.logger.info('Checking new update for response of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
+
     try:
         msg = update['message']
         if msg['from']['id'] == user_id and msg['chat']['id'] == chat_id:
+            logger.logger.info('Found reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
             value_ = msg['text']
             raise AutoDelete()
-    except (NameError, KeyError, IndexError):
-        pass
+    except (NameError, KeyError, IndexError) as e:
+        logger.logger.warning('Ignored ' + str(type(e)) + ' in checking update for response: ' + str(e))
 
 
 def wait_for_user_response(chat_id: int, user_id: int) -> str:
+    logger.logger.info('Adding handler of reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
     api.add_message_listener(report_custom_message, chat_id, user_id)
+    logger.logger.info('Added handler of user (id = ' + str(user_id) + ') in chat #' + str(chat_id) + ' , starting waiting')
     while value_ is None:
         pass
+    logger.logger.info('Returning reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
     return value_
 
 

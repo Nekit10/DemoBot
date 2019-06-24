@@ -31,7 +31,10 @@ def _parse_mail_info():
     logger.logger.debug('Reading data from emailinfo.json')
 
     with open(os.path.join(os.path.dirname(__file__), 'mailinfo.json'), 'r') as f:
-        return json.loads(f.read())
+        res_ =  json.loads(f.read())
+    logger.logger.debug('Successfully readed data from emailinfo.json')
+
+    return res_
 
 
 def send_email(to: str, re: str, msg_: str, files: list):
@@ -43,6 +46,8 @@ def send_email(to: str, re: str, msg_: str, files: list):
     s.starttls()
     s.login(mail_info['sender']['email'], mail_info['sender']['password'])
 
+    logger.logger.info('Successfully logined in SMTP sever with login: ' + mail_info['sender']['email'])
+
     msg = MIMEMultipart()
     msg['From'] = mail_info['sender']['email']
     msg['To'] = to
@@ -51,6 +56,7 @@ def send_email(to: str, re: str, msg_: str, files: list):
     msg.attach(MIMEText(msg_, 'plain'))
 
     for file_lst in files:
+        logger.logger.debug('Attaching ' + file_lst[1] + ' to email')
         filename = file_lst[0]
         attachment = open(file_lst[1], 'rb')
 
@@ -66,8 +72,10 @@ def send_email(to: str, re: str, msg_: str, files: list):
 
         msg.attach(p)
 
+        logger.logger.debug('Successfully attached ' + file_lst[0] + ' to email')
+
     s.send_message(msg)
 
-    logger.logger.info('Email successfullly sent')
+    logger.logger.info('Email successfully sent')
 
     del msg

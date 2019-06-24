@@ -45,25 +45,40 @@ def log_server_info():
 
 
 def load_chats():
+    logger.logger.info('Loading chats in main.py')
+
     path = os.path.join(os.path.dirname(__file__), 'chats.json')
+
+    logger.logger.debug('Full path to file with chats: ' + path)
 
     if os.path.exists(path):
         with open(path, 'r') as f:
             return json.loads(f.read())
     else:
+        logger.logger.debug('Chats file doest not exist, returning empty list')
         return []
 
 
 if __name__ == '__main__':
-    logger.logger.info('Starting bot')
+    logger.logger.info('Starting bot, version: ' + VERSION)
 
     log_server_info()
+    logger.logger.debug('Debug mode is' + ('on' if DEBUG_MODE else 'off'))
     demobot.init_bot(DEBUG_MODE)
 
+    logger.logger.debug('Full run command (argc = ' + str(len(sys.argv)) + ') : ' + ' '.join(sys.argv))
     if len(sys.argv) > 1 and sys.argv[1] == '--version-notify':
+        logger.logger.info('Running version notify variant of program')
+
         api = Bot2API(DEBUG_MODE)
-        for chat in load_chats():
+
+        chats = load_chats()
+        logger.logger.debug('Loaded ' + str(len(chats)) + ' chats')
+
+        for chat in chats:
+            logger.logger.debug('Sending version notify message to chat #' + str(chat))
             api.send_message(chat, msg_version_info(chat))
+        logger.logger.info('Ended sending notify messages')
         sys.exit(0)
 
     while True:
@@ -71,9 +86,8 @@ if __name__ == '__main__':
             logger.logger.debug('Running main loop from beginning')
             demobot.main_loop()
         except Exception as e:
+            logger.logger.warning('Exception (Ignored)! ' + str(e))
             if not DEBUG_MODE:
-                logger.logger.warning('Exception (Ignored)! ' + str(e))
                 report_exception(e)
-                print(str(e))
             else:
                 raise e
