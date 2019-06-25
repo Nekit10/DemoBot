@@ -49,7 +49,8 @@ def get_lang_name_by_code(code: str) -> str:
 def get_all_langs() -> typing.List[list]:
     langs_path = os.path.join(os.path.dirname(__file__), '../../langs/')
     logger.logger.info('Getting all langs in ' + langs_path)
-    return [[get_lang_name_by_code(f[:-5]), f[:-5]] for f in os.listdir(langs_path) if f.endswith('.json') and os.path.isfile(os.path.join(langs_path, f))]
+    return [[get_lang_name_by_code(f[:-5]), f[:-5]]
+            for f in os.listdir(langs_path) if f.endswith('.json') and os.path.isfile(os.path.join(langs_path, f))]
 
 
 def _get_trans_str(chat_id: int, name: str) -> str:

@@ -26,14 +26,16 @@ from src import logger
 def get_log_files() -> typing.List[str]:
     logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '../../logs/')
     logger.logger.debug('Getting logs from ' + logs_dir)
-    files = [os.path.join(logs_dir, f) for f in os.listdir(logs_dir) if os.path.isfile(os.path.join(logs_dir, f)) and f.endswith('.log')]
+    files = [os.path.join(logs_dir, f)
+             for f in os.listdir(logs_dir) if os.path.isfile(os.path.join(logs_dir, f)) and f.endswith('.log')]
 
     return files
 
 
 def report_custom_message(msg: str, from_email: str) -> None:
     logger.logger.info('Reporting "' + msg + '" from ' + from_email)
-    mailutil.send_email(mailutil._parse_mail_info()['bug_tracker_email'], 'Bug Report', 'New bug report!\n' + msg + '\nFrom: ' + from_email, get_log_files())
+    mailutil.send_email(mailutil.parse_mail_info()['bug_tracker_email'], 'Bug Report', 'New bug report!\n' + msg
+                        + '\nFrom: ' + from_email, get_log_files())
 
 
 def report_exception(e: Exception) -> None:

@@ -29,7 +29,7 @@ from email import encoders
 from src import logger
 
 
-def _parse_mail_info() -> dict:
+def parse_mail_info() -> dict:
     logger.logger.debug('Reading data from emailinfo.json')
 
     with open(os.path.join(os.path.dirname(__file__), 'mailinfo.json'), 'r') as f:
@@ -54,7 +54,7 @@ def prepare_file(path: str) -> MIMEBase:
 
 
 def send_email(to: str, re: str, msg_: str, files: typing.Iterable[str]) -> None:
-    mail_info = _parse_mail_info()
+    mail_info = parse_mail_info()
 
     logger.logger.info('Sending email to ' + to)
 

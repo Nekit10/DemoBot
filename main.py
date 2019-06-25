@@ -35,13 +35,13 @@ load_chat_langs()
 
 def log_server_info() -> None:
     logger.logger.info('\nPC Specs: ' +
-                 '\nMachine: ' + platform.machine() +
-                 '\nOS Version: ' + platform.version() +
-                 '\nPlatform: ' + platform.platform() +
-                 '\nUname: ' + ' '.join(platform.uname()) +
-                 '\nSystem: ' + platform.system() +
-                 '\nCPU: ' + platform.processor() +
-                 '\nPython version: ' + platform.python_version())
+                       '\nMachine: ' + platform.machine() +
+                       '\nOS Version: ' + platform.version() +
+                       '\nPlatform: ' + platform.platform() +
+                       '\nUname: ' + ' '.join(platform.uname()) +
+                       '\nSystem: ' + platform.system() +
+                       '\nCPU: ' + platform.processor() +
+                       '\nPython version: ' + platform.python_version())
 
 
 def load_chats() -> typing.List[int]:

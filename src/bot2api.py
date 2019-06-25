@@ -16,20 +16,18 @@
 #
 #    Copyright (c) 2019 Nikita Serba
 
-import inspect
 import os
 import json
 import ctypes
 import random
 import re
 import threading
-from _queue import Empty
+import inspect
 from threading import Thread
 from multiprocessing import Queue, Manager
-from typing import Callable, List, Iterable, Dict, Any, Mapping
+from typing import Callable, Iterable, Any, Dict, Union, List
 
 import requests
-import sys
 
 from src import logger
 from sysbugs import bugtrackerapi
@@ -47,11 +45,11 @@ class Bot2API:
 
     _config: dict
     _token: str
-    _url: str
-    _url_c = threading.Condition()
+    url: str
+    url_c = threading.Condition()
 
-    _message_listeners: list = []
-    _message_listeners_c = threading.Condition()
+    message_listeners: list = []
+    message_listeners_c = threading.Condition()
     _command_listeners: dict = {}
     _inline_listeners: dict = {}
 
@@ -67,9 +65,9 @@ class Bot2API:
         self._load_config(config_filename)
 
         self._token = self._config['token']
-        self._url_c.acquire()
-        self._url = 'https://api.telegram.org/bot' + self._token
-        self._url_c.release()
+        self.url_c.acquire()
+        self.url = 'https://api.telegram.org/bot' + self._token
+        self.url_c.release()
 
         self._updater_command_queue = Queue()
         self._updater_result_dict = Manager().dict()
@@ -87,9 +85,9 @@ class Bot2API:
 
         logger.logger.info('Adding new message listener')
 
-        self._message_listeners_c.acquire()
-        self._message_listeners += [[listener, args, kwargs]]
-        self._message_listeners_c.release()
+        self.message_listeners_c.acquire()
+        self.message_listeners += [[listener, args, kwargs]]
+        self.message_listeners_c.release()
 
     def add_command_listener(self, command: str, listener: Callable, timeout_seconds: int = 300) -> None:
         """
@@ -116,7 +114,8 @@ class Bot2API:
         if timeout_seconds > 60:
             raise OverflowError('Timeout must be smaller than 1 minute')
 
-        logger.logger.info('Adding listener for inline query callback (msg_id = ' + str(msg_id) + ') in chat #' + str(chat_id))
+        logger.logger.info(
+            'Adding listener for inline query callback (msg_id = ' + str(msg_id) + ') in chat #' + str(chat_id))
 
         if chat_id not in self._inline_listeners.keys():
             self._inline_listeners[chat_id] = {}
@@ -124,7 +123,8 @@ class Bot2API:
         self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
     def start_poll(self, chat_id: int, question: str, answers: Iterable[str]) -> Dict[str, Any]:
-        logger.logger.info('Starting poll in chat #' + str(chat_id) + ' with question "' + question + '" and options [' + ', '.join(answers) + ']')
+        logger.logger.info(
+            'Starting poll in chat #' + str(chat_id) + ' with question "' + question + '" and options ' + str(answers))
         return self._response_prepare(self._request_prepare('sendPoll', {
             'chat_id': chat_id,
             'question': question,
@@ -135,10 +135,12 @@ class Bot2API:
         logger.logger.info('Sending message "' + message + '" in chat #' + str(chat_id))
         return self._response_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
-    def send_inline_message(self, chat_id: int, message: str, options: list, listener: Callable, timeout_seconds: int = 1) -> Dict[str, Any]:
+    def send_inline_message(self, chat_id: int, message: str, options: list, listener: Callable,
+                            timeout_seconds: int = 1) -> Dict[str, Any]:
         inline_keyboard_items = []
 
-        logger.logger.info('Sending inline message "' + message + '" in chat #' + str(chat_id) + '; options: ' + str(options))
+        logger.logger.info(
+            'Sending inline message "' + message + '" in chat #' + str(chat_id) + '; options: ' + str(options))
 
         for option in options:
             inline_keyboard_items += [{
@@ -159,7 +161,8 @@ class Bot2API:
         return resp
 
     def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> Dict[str, Any]:
-        logger.logger.info('Kicking user with id ' + str(user_id) + ' in chat #' + str(chat_id) + ' until ' + str(until_date))
+        logger.logger.info(
+            'Kicking user with id ' + str(user_id) + ' in chat #' + str(chat_id) + ' until ' + str(until_date))
 
         return self._response_prepare(self._request_prepare('kickChatMember', {
             'chat_id': chat_id,
@@ -176,10 +179,10 @@ class Bot2API:
             self._config = json.loads(f.read())
         logger.logger.info('Successfully loaded config in api')
 
-    def _request_prepare(self, command_name: str, args: Mapping[str, Any]) -> requests.Response:
-        self._url_c.acquire()
-        url_ = self._url + '/' + command_name
-        self._url_c.release()
+    def _request_prepare(self, command_name: str, args: Dict[str, Any]) -> requests.Response:
+        self.url_c.acquire()
+        url_ = self.url + '/' + command_name
+        self.url_c.release()
 
         logger.logger.info('Preparing request for command ' + command_name)
 
@@ -187,7 +190,7 @@ class Bot2API:
             url_ += '?'
 
             for arg_name, value in args.items():
-                val_ = str(value) if type(value) != dict and type(value) != list else json.dumps(value)
+                val_ = str(value) if not isinstance(value, dict) and not isinstance(value, list) else json.dumps(value)
                 url_ += '{}={}&'.format(arg_name, val_)
 
             url_ = url_[:-1]
@@ -198,9 +201,11 @@ class Bot2API:
         try:
             text = update['message']['text']
             logger.logger.info('Checking update for command /' + command)
-            if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) and self._config['bot_username'] in text:
+            if text.startswith('/' + command) and re.search(r'[^a-zA-Z]', text[1:]) \
+                    and self._config['bot_username'] in text:
                 logger.logger.info('Found command /' + command)
-                thread = self._MethodRunningThread(self, -1, self._command_listeners[command], update['message']['chat']['id'], update['message']['from']['id'])
+                thread = self.MethodRunningThread(self, -1, self._command_listeners[command],
+                                                  update['message']['chat']['id'], update['message']['from']['id'])
                 thread.setDaemon(True)
                 thread.start()
                 thread.join(timeout_seconds)
@@ -208,11 +213,13 @@ class Bot2API:
         except (NameError, KeyError, IndexError):
             pass
 
-    def _inline_listener_def(self, update: Mapping[str, Any],  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
+    def _inline_listener_def(self, update: Dict[str, Any], msg_id: int, chat_id: int,
+                             timeout_seconds: int = 300) -> None:
         try:
             logger.logger.info('Checking update for inline query callback')
             query = update['callback_query']
-            thread = self._MethodRunningThread(self, -1, self._inline_listeners[chat_id][msg_id], chat_id, query['data'])
+            thread = self.MethodRunningThread(self, -1, self._inline_listeners[chat_id][msg_id], chat_id,
+                                              query['data'])
             thread.setDaemon(True)
             thread.start()
             thread.join(timeout_seconds)
@@ -221,13 +228,15 @@ class Bot2API:
             pass
 
     @staticmethod
-    def _response_prepare(response: requests.Response) -> Dict[str, Any]:
+    def _response_prepare(response: requests.Response) -> Union[Dict[str, Any], List[Any]]:
         logger.logger.info('Preparing response for url: ' + response.url)
 
         resp_obj = response.json()
 
         if response.status_code != 200 or not resp_obj['ok']:
-            raise ConnectionError('Error while working with Telegram Bot API (status code = ' + str(response.status_code) + '). ' + resp_obj['description'])
+            raise ConnectionError(
+                'Error while working with Telegram Bot API (status code = ' + str(response.status_code) + '). ' +
+                resp_obj['description'])
 
         return resp_obj['result']
 
@@ -254,10 +263,13 @@ class Bot2API:
     class _UpdaterLoopThread(Thread):
         _offset: int = 605766741  # Why not?
 
-        def __init__(self, cmd_queue: Queue, result_dict: Mapping[int, Dict[str, Any]], api: object):
+        def __init__(self, cmd_queue: Queue, result_dict: Dict[int, requests.Response], api: Any):
             Thread.__init__(self)
 
             logger.logger.info('Creating UpdateLoop thread instance')
+
+            if not isinstance(api, Bot2API):
+                raise TypeError('Invalid api')
 
             self.cmd_queue = cmd_queue
             self.result_dict = result_dict
@@ -267,28 +279,29 @@ class Bot2API:
             logger.logger.info('Got command ' + url + ' with id ' + str(id_))
             self.result_dict[id_] = requests.get(url)
 
-        def _update_offset(self, updates: Iterable[Mapping[str, Any]]) -> None:
+        def _update_offset(self, updates: List[Dict[str, Any]]) -> None:
             if updates:
                 self._offset = updates[-1]['update_id'] + 1
                 logger.logger.trace('Updated offset to ' + str(self._offset))
 
-        def _run_update_listeners(self, update: Mapping[str, Any]) -> None:
-            self.api._message_listeners_c.acquire()
-            for i in range(len(self.api._message_listeners)):
-                listener, args, kwargs = self.api._message_listeners[i]
+        def _run_update_listeners(self, update: Dict[str, Any]) -> None:
+            self.api.message_listeners_c.acquire()
+            for i in range(len(self.api.message_listeners)):
+                listener, args, kwargs = self.api.message_listeners[i]
                 try:
-                    thread = self.api._MethodRunningThread(self.api, i, listener, update, *args, **kwargs)
+                    thread = self.api.MethodRunningThread(self.api, i, listener, update, *args, **kwargs)
                     thread.setDaemon(True)
                     thread.start()
                 except Exception as e:
                     logger.logger.error('Got ' + str(type(e)) + ' while running listener: ' + str(e))
-            self.api._message_listeners_c.release()
+            self.api.message_listeners_c.release()
 
         def _get_updates_to_listeners(self) -> None:
             logger.logger.trace('Sending new updates request')
-            self.api._url_c.acquire()
-            upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
-            self.api._url_c.release()
+            self.api.url_c.acquire()
+            upd_resp = Bot2API._response_prepare(
+                requests.get(self.api.url + '/getUpdates?offset=' + str(self._offset)))
+            self.api.url_c.release()
 
             self._update_offset(upd_resp)
 
@@ -298,20 +311,23 @@ class Bot2API:
         def run(self) -> None:
             try:
                 while True:
-                    try:
-                        self._make_request(*self.cmd_queue.get(timeout=0.1))
-                    except Empty:
+                    if self.cmd_queue.empty():
                         self._get_updates_to_listeners()
+                    else:
+                        self._make_request(*self.cmd_queue.get(timeout=0.1))
             except Exception as e:
                 logger.logger.fatal('Got ' + str(type(e)) + ' in UpdaterLoop thread!!! Exception: ' + str(e))
                 bugtrackerapi.report_exception(e)
                 raise e
 
-    class _MethodRunningThread(Thread):
-        def __init__(self, api: object, i: int, method: Callable, *args, **kwargs):
+    class MethodRunningThread(Thread):
+        def __init__(self, api: Any, i: int, method: Callable, *args, **kwargs):
             Thread.__init__(self)
 
             logger.logger.info('Creating thread for running method ' + method.__name__)
+
+            if not isinstance(api, Bot2API):
+                raise TypeError('Invalid api')
 
             if not callable(method):
                 raise TypeError('Method must be callable')
@@ -326,9 +342,9 @@ class Bot2API:
             try:
                 self.method(*self.args, **self.kwargs)
             except AutoDelete:
-                self.api._message_listeners_c.acquire()
-                del self.api._message_listeners[self.i]
-                self.api._message_listeners_c.release()
+                self.api.message_listeners_c.acquire()
+                del self.api.message_listeners[self.i]
+                self.api.message_listeners_c.release()
             finally:
                 pass  # end function here bro
 

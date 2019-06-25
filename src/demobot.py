@@ -93,7 +93,7 @@ def get_new_chat_from_update(update: typing.Mapping[str, typing.Any]) -> None:
     logger.logger.info('Starting checking update for new chats')
     for key, data in update.items():
         try:
-            if type(data) == dict:
+            if isinstance(data, dict):
                 save_new_chat(data['chat']['id'])
         except (KeyError, NameError, IndexError) as e:
             logger.logger.warning('Ignored ' + str(type(e)) + ' in checking update for new chats: ' + str(e))
@@ -109,23 +109,26 @@ def load_config(debug: bool = False) -> typing.Dict[str, typing.Any]:
 
 
 def process_update_with_poll_candidate(update: typing.Mapping[str, typing.Any]) -> None:
-        chat_id = update['message']['reply_to_message']['chat']['id']
-        name = update['message']['reply_to_message']['from']['first_name']
-        if 'last_name' in update['message']['reply_to_message']['from'].keys():
-            name += ' ' + update['message']['reply_to_message']['from']['last_name']
-        user_id = update['message']['reply_to_message']['from']['id']
+    chat_id = update['message']['reply_to_message']['chat']['id']
+    name = update['message']['reply_to_message']['from']['first_name']
+    if 'last_name' in update['message']['reply_to_message']['from'].keys():
+        name += ' ' + update['message']['reply_to_message']['from']['last_name']
+    user_id = update['message']['reply_to_message']['from']['id']
 
-        logger.logger.info('Found kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
+    logger.logger.info(
+        'Found kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
 
-        start_poll(chat_id, name, user_id)
-        logger.logger.info('Ended starting poll for kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
+    start_poll(chat_id, name, user_id)
+    logger.logger.info(
+        'Ended starting poll for kick candidate in chat #' + str(chat_id) + ', with name ' + name
+        + '(' + str(user_id) + ')')
 
 
 def process_update_and_start_poll(update: typing.Mapping[str, typing.Any]) -> None:
     try:
         logger.logger.trace('Checking new update! (is mention? ' + str(
-            config['bot_username'] in update['message']['text']) + '; is reply? ' + str(
-            'reply_to_message' in update['message'].keys()) + ')\n' + str(update))
+            config['bot_username'] in update['message']['text']) + '; is reply? '
+                            + str('reply_to_message' in update['message'].keys()) + ')\n' + str(update))
         if config['bot_username'] in update['message']['text'] and 'reply_to_message' in update['message'].keys():
             process_update_and_start_poll(update)
     except (NameError, IndexError, KeyError) as e:
@@ -135,7 +138,8 @@ def process_update_and_start_poll(update: typing.Mapping[str, typing.Any]) -> No
 def start_poll(chat_id: int, name: str, user_id: int) -> None:
     global polls, api
 
-    response = api.start_poll(chat_id, langapi.msg_kick(chat_id).replace('%NAME%', name), [langapi.msg_kick_yes(chat_id), langapi.msg_kick_no(chat_id)])
+    response = api.start_poll(chat_id, langapi.msg_kick(chat_id).replace('%NAME%', name),
+                              [langapi.msg_kick_yes(chat_id), langapi.msg_kick_no(chat_id)])
 
     poll_id = int(response['poll']['id'])
 
@@ -196,7 +200,8 @@ def update_poll_options(update: typing.Mapping[str, typing.Any]) -> None:
 def kick_candidate(poll_id: int) -> None:
     global polls
 
-    logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' + str(polls[poll_id]['chat_id']))
+    logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' +
+                       str(polls[poll_id]['chat_id']))
 
     api.send_message(polls[poll_id]['chat_id'],
                      langapi.msg_kick_res(polls[poll_id]['chat_id']).replace('%NAME%', polls[poll_id]['name']))
@@ -246,7 +251,8 @@ def wait_for_user_response(chat_id: int, user_id: int) -> str:
     value_c.acquire()
     logger.logger.info('Adding handler of reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
     api.add_message_listener(respond_checking_processor, chat_id, user_id)
-    logger.logger.info('Added handler of user (id = ' + str(user_id) + ') in chat #' + str(chat_id) + ' , starting waiting')
+    logger.logger.info(
+        'Added handler of user (id = ' + str(user_id) + ') in chat #' + str(chat_id) + ' , starting waiting')
     while value_ is None:
         pass
     logger.logger.info('Returning reply of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
