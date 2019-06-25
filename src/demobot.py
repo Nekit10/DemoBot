@@ -20,6 +20,7 @@ import json
 import os
 import time
 import threading
+import typing
 
 from src import logger
 from src.syslang import langapi
@@ -34,7 +35,7 @@ api: Bot2API
 POLLS_FILENAME: str = 'pollsinfo.json'
 
 
-def init_bot(debug: bool = False):
+def init_bot(debug: bool = False) -> None:
     global api, config
     logger.logger.info('Begging init of bot')
 
@@ -54,7 +55,7 @@ def init_bot(debug: bool = False):
     api.add_message_listener(get_new_chat_from_update)
 
 
-def load_chats():
+def load_chats() -> None:
     global chats
 
     path = os.path.join(os.path.dirname(__file__), '../', 'chats.json')
@@ -71,7 +72,7 @@ def load_chats():
         logger.logger.debug('Chats file does not exist')
 
 
-def save_new_chat(chat: int):
+def save_new_chat(chat: int) -> None:
     global chats
 
     logger.logger.info('Trying to safe new chat #' + str(chat))
@@ -88,7 +89,7 @@ def save_new_chat(chat: int):
         logger.logger.info('Chat is already in database')
 
 
-def get_new_chat_from_update(update: dict):
+def get_new_chat_from_update(update: typing.Mapping[str, typing.Any]) -> None:
     logger.logger.info('Starting checking update for new chats')
     for key, data in update.items():
         try:
@@ -98,7 +99,7 @@ def get_new_chat_from_update(update: dict):
             logger.logger.warning('Ignored ' + str(type(e)) + ' in checking update for new chats: ' + str(e))
 
 
-def load_config(debug: bool = False) -> dict:
+def load_config(debug: bool = False) -> typing.Dict[str, typing.Any]:
     config_filename = 'config.json' if not debug else 'devconfig.json'
     logger.logger.info('Loading config from ' + config_filename + ' in demobot.py')
     with open(config_filename, 'r') as f:
@@ -107,22 +108,26 @@ def load_config(debug: bool = False) -> dict:
     return res_
 
 
-def process_update_and_start_poll(update: dict) -> None:
+def process_update_with_poll_candidate(update: typing.Mapping[str, typing.Any]) -> None:
+        chat_id = update['message']['reply_to_message']['chat']['id']
+        name = update['message']['reply_to_message']['from']['first_name']
+        if 'last_name' in update['message']['reply_to_message']['from'].keys():
+            name += ' ' + update['message']['reply_to_message']['from']['last_name']
+        user_id = update['message']['reply_to_message']['from']['id']
+
+        logger.logger.info('Found kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
+
+        start_poll(chat_id, name, user_id)
+        logger.logger.info('Ended starting poll for kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
+
+
+def process_update_and_start_poll(update: typing.Mapping[str, typing.Any]) -> None:
     try:
         logger.logger.trace('Checking new update! (is mention? ' + str(
             config['bot_username'] in update['message']['text']) + '; is reply? ' + str(
             'reply_to_message' in update['message'].keys()) + ')\n' + str(update))
         if config['bot_username'] in update['message']['text'] and 'reply_to_message' in update['message'].keys():
-            chat_id = update['message']['reply_to_message']['chat']['id']
-            name = update['message']['reply_to_message']['from']['first_name']
-            if 'last_name' in update['message']['reply_to_message']['from'].keys():
-                name += ' ' + update['message']['reply_to_message']['from']['last_name']
-            user_id = update['message']['reply_to_message']['from']['id']
-
-            logger.logger.info('Found kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
-
-            start_poll(chat_id, name, user_id)
-            logger.logger.info('Ended starting poll for kick candidate in chat #' + str(chat_id) + ', with name ' + name + '(' + str(user_id) + ')')
+            process_update_and_start_poll(update)
     except (NameError, IndexError, KeyError) as e:
         logger.logger.trace('Ignored name exception in checking poll candidates: ' + str(e))
 
@@ -144,7 +149,7 @@ def start_poll(chat_id: int, name: str, user_id: int) -> None:
     polls[poll_id] = poll_info
 
 
-def load_polls_info():
+def load_polls_info() -> None:
     global polls
 
     path = os.path.join(os.path.dirname(__file__), '../', POLLS_FILENAME)
@@ -162,7 +167,7 @@ def load_polls_info():
         logger.logger.debug('Poll file doest not exist')
 
 
-def save_polls():
+def save_polls() -> None:
     path = os.path.join(os.path.dirname(__file__), '../', POLLS_FILENAME)
 
     logger.logger.info('Saving polls to ' + path)
@@ -173,7 +178,7 @@ def save_polls():
     logger.logger.info('Successfully saved polls')
 
 
-def update_poll_options(update: dict):
+def update_poll_options(update: typing.Mapping[str, typing.Any]) -> None:
     global polls
 
     logger.logger.info('Checking new update for new poll result')
@@ -188,7 +193,7 @@ def update_poll_options(update: dict):
         logger.logger.warning('Ignored ' + str(type(e)) + ' in updating options of polls: ' + str(e))
 
 
-def kick_candidate(poll_id: int):
+def kick_candidate(poll_id: int) -> None:
     global polls
 
     logger.logger.info('Kicking ' + polls[poll_id]['name'] + '(' + str(polls[poll_id]['user_id']) + ') in chat #' + str(polls[poll_id]['chat_id']))
@@ -199,7 +204,7 @@ def kick_candidate(poll_id: int):
     api.kick_chat_member(polls[poll_id]['chat_id'], polls[poll_id]['user_id'])
 
 
-def check_old_polls():
+def check_old_polls() -> None:
     global polls
     remove = []
 
@@ -220,7 +225,7 @@ value_ = None
 value_c = threading.Condition()
 
 
-def respond_checking_processor(update: dict, chat_id: int, user_id: int):
+def respond_checking_processor(update: typing.Mapping[str, typing.Any], chat_id: int, user_id: int) -> None:
     global value_
 
     logger.logger.info('Checking new update for response of user (id = ' + str(user_id) + ') in chat #' + str(chat_id))
@@ -251,7 +256,7 @@ def wait_for_user_response(chat_id: int, user_id: int) -> str:
     return copy_
 
 
-def report_command_processor(chat_id: int, from_id: int):
+def report_command_processor(chat_id: int, from_id: int) -> None:
     logger.logger.info('Starting processor for report command')
     api.send_message(chat_id, langapi.msg_descrb_problem(chat_id))
 
@@ -271,12 +276,12 @@ def report_command_processor(chat_id: int, from_id: int):
     logger.logger.info('Successfully sent bug report')
 
 
-def change_lang_in_chat(chat_id: int, lang: str):
+def change_lang_in_chat(chat_id: int, lang: str) -> None:
     langapi.set_lang_for_chat(chat_id, lang)
     api.send_message(chat_id, langapi.msg_lang_notify(chat_id))
 
 
-def send_lang_inline(chat_id: int, from_id: int):
+def send_lang_inline(chat_id: int, from_id: int) -> None:
     logger.logger.info('Sending inline lang chooser in chat #' + str(chat_id))
     api.send_inline_message(chat_id, langapi.msg_lang_choose(chat_id), langapi.get_all_langs(), change_lang_in_chat)
 

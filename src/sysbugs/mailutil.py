@@ -18,6 +18,8 @@
 
 import json
 import os
+import ntpath
+import typing
 from smtplib import SMTP
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -27,17 +29,31 @@ from email import encoders
 from src import logger
 
 
-def _parse_mail_info():
+def _parse_mail_info() -> dict:
     logger.logger.debug('Reading data from emailinfo.json')
 
     with open(os.path.join(os.path.dirname(__file__), 'mailinfo.json'), 'r') as f:
-        res_ =  json.loads(f.read())
+        res_ = json.loads(f.read())
     logger.logger.debug('Successfully readed data from emailinfo.json')
 
     return res_
 
 
-def send_email(to: str, re: str, msg_: str, files: list):
+def prepare_file(path: str) -> MIMEBase:
+    logger.logger.debug('Attaching ' + path + ' to email')
+    filename = ntpath.basename(path)
+    attachment = open(path, 'rb')
+
+    logger.logger.debug('Attaching ' + filename + ' to email')
+    p = MIMEBase('application', 'octet-stream')
+    p.set_payload(attachment.read())
+    encoders.encode_base64(p)
+    p.add_header('Content-Disposition', "attachment; filename= {}".format(filename))
+
+    return p
+
+
+def send_email(to: str, re: str, msg_: str, files: typing.Iterable[str]) -> None:
     mail_info = _parse_mail_info()
 
     logger.logger.info('Sending email to ' + to)
@@ -55,24 +71,9 @@ def send_email(to: str, re: str, msg_: str, files: list):
 
     msg.attach(MIMEText(msg_, 'plain'))
 
-    for file_lst in files:
-        logger.logger.debug('Attaching ' + file_lst[1] + ' to email')
-        filename = file_lst[0]
-        attachment = open(file_lst[1], 'rb')
-
-        logger.logger.debug('Attaching ' + filename + ' to email')
-
-        p = MIMEBase('application', 'octet-stream')
-
-        p.set_payload(attachment.read())
-
-        encoders.encode_base64(p)
-
-        p.add_header('Content-Disposition', "attachment; filename= {}".format(filename))
-
-        msg.attach(p)
-
-        logger.logger.debug('Successfully attached ' + file_lst[0] + ' to email')
+    for file in files:
+        msg.attach(prepare_file(file))
+        logger.logger.debug('Successfully attached ' + file[0] + ' to email')
 
     s.send_message(msg)
 

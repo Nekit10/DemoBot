@@ -17,24 +17,25 @@
 #    Copyright (c) 2019 Nikita Serba
 
 import os
+import typing
 
 from src.sysbugs import mailutil
 from src import logger
 
 
-def get_log_files() -> list:
+def get_log_files() -> typing.List[str]:
     logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), '../../logs/')
     logger.logger.debug('Getting logs from ' + logs_dir)
-    files = [[f, os.path.join(logs_dir, f)] for f in os.listdir(logs_dir) if os.path.isfile(os.path.join(logs_dir, f)) and f.endswith('.log')]
+    files = [os.path.join(logs_dir, f) for f in os.listdir(logs_dir) if os.path.isfile(os.path.join(logs_dir, f)) and f.endswith('.log')]
 
     return files
 
 
-def report_custom_message(msg: str, from_email: str):
+def report_custom_message(msg: str, from_email: str) -> None:
     logger.logger.info('Reporting "' + msg + '" from ' + from_email)
     mailutil.send_email(mailutil._parse_mail_info()['bug_tracker_email'], 'Bug Report', 'New bug report!\n' + msg + '\nFrom: ' + from_email, get_log_files())
 
 
-def report_exception(e: Exception):
+def report_exception(e: Exception) -> None:
     logger.logger.info('Reporting exception: ' + str(e))
     report_custom_message(str(e), 'None')

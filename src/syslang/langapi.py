@@ -18,6 +18,7 @@
 
 import os
 import json
+import typing
 
 from src import logger
 
@@ -45,7 +46,7 @@ def get_lang_name_by_code(code: str) -> str:
     return res_
 
 
-def get_all_langs() -> list:
+def get_all_langs() -> typing.List[list]:
     langs_path = os.path.join(os.path.dirname(__file__), '../../langs/')
     logger.logger.info('Getting all langs in ' + langs_path)
     return [[get_lang_name_by_code(f[:-5]), f[:-5]] for f in os.listdir(langs_path) if f.endswith('.json') and os.path.isfile(os.path.join(langs_path, f))]
@@ -55,9 +56,7 @@ def _get_trans_str(chat_id: int, name: str) -> str:
     code = 'en-US' if chat_id not in lang_by_chat.keys() else lang_by_chat[chat_id]
 
     logger.logger.info('Getting translated string by code ' + name + ' in chat #' + str(chat_id))
-
     lang_file = os.path.join(os.path.dirname(__file__), '../../langs/' + code + '.json')
-
     logger.logger.info('Loading lang json file from ' + lang_file)
 
     with open(lang_file, 'r', encoding='utf-8') as f:
@@ -68,7 +67,7 @@ def _get_trans_str(chat_id: int, name: str) -> str:
     return langs['translation'][name]
 
 
-def load_chat_langs():
+def load_chat_langs() -> None:
     global lang_by_chat
 
     logger.logger.info('Reading chat\'s langs')
@@ -86,7 +85,7 @@ def load_chat_langs():
         lang_by_chat[int(k)] = v
 
 
-def save_chat_langs():
+def save_chat_langs() -> None:
     logger.logger.info('Saving chat\'s langs')
 
     file_full_path = os.path.join(os.path.dirname(__file__), '../../' + CHAT_LANG_FILE)
@@ -96,41 +95,41 @@ def save_chat_langs():
     logger.logger.info('Successfully saved chat\'s langs')
 
 
-def msg_kick(chat_id) -> str:
+def msg_kick(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'kick')
 
 
-def msg_kick_yes(chat_id) -> str:
+def msg_kick_yes(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'kick_yes')
 
 
-def msg_kick_no(chat_id) -> str:
+def msg_kick_no(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'kick_no')
 
 
-def msg_kick_res(chat_id) -> str:
+def msg_kick_res(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'kick_res')
 
 
-def msg_descrb_problem(chat_id) -> str:
+def msg_descrb_problem(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'descrb_problem')
 
 
-def msg_give_contact_info(chat_id) -> str:
+def msg_give_contact_info(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'give_contact_info')
 
 
-def msg_bug_report_send(chat_id) -> str:
+def msg_bug_report_send(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'bug_report_send')
 
 
-def msg_lang_choose(chat_id) -> str:
+def msg_lang_choose(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'lang_choose')
 
 
-def msg_lang_notify(chat_id) -> str:
+def msg_lang_notify(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'lang_notify')
 
 
-def msg_version_info(chat_id) -> str:
+def msg_version_info(chat_id: int) -> str:
     return _get_trans_str(chat_id, 'version_info')

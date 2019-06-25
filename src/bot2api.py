@@ -21,12 +21,12 @@ import os
 import json
 import ctypes
 import random
-import typing
 import re
 import threading
 from _queue import Empty
 from threading import Thread
 from multiprocessing import Queue, Manager
+from typing import Callable, List, Iterable, Dict, Any, Mapping
 
 import requests
 import sys
@@ -57,7 +57,7 @@ class Bot2API:
 
     _updater_loop: Thread
     _updater_command_queue: Queue
-    _updater_result_dict: typing.Dict
+    _updater_result_dict: Dict
 
     def __init__(self, debug_mode: bool):
 
@@ -79,14 +79,11 @@ class Bot2API:
         self._updater_loop.start()
         logger.logger.info('UpdaterLoop thread was successfully started')
 
-    def add_message_listener(self, listener, *args, **kwargs) -> None:
+    def add_message_listener(self, listener: Callable, *args, **kwargs) -> None:
         """
         This methods adds `listener` as listener for new updates.
         UpdaterLoopThread will call listener(update: dict, *args, **kwargs) for every new update
         """
-
-        if not callable(listener):
-            raise TypeError('Message listener must be callable')
 
         logger.logger.info('Adding new message listener')
 
@@ -94,15 +91,12 @@ class Bot2API:
         self._message_listeners += [[listener, args, kwargs]]
         self._message_listeners_c.release()
 
-    def add_command_listener(self, command: str, listener, timeout_seconds: int = 300) -> None:
+    def add_command_listener(self, command: str, listener: Callable, timeout_seconds: int = 300) -> None:
         """
         This methods adds `listener` as listener for running /`command`@BotName.
         UpdaterLoopThread will call listener(chat_id: int, from_id: int) for every new command.
         Listener will be killed after timeout_seconds
         """
-
-        if not callable(listener):
-            raise TypeError('Command listener must be callable')
 
         if timeout_seconds > 600:
             raise OverflowError('Timeout must be smaller than 10 minutes')
@@ -112,15 +106,12 @@ class Bot2API:
         self._command_listeners[command] = listener
         self.add_message_listener(self._command_listener_def, command, timeout_seconds)
 
-    def add_inline_listener(self, msg_id: int, chat_id: int, listener, timeout_seconds: int = 1) -> None:
+    def add_inline_listener(self, msg_id: int, chat_id: int, listener: Callable, timeout_seconds: int = 1) -> None:
         """
         This methods adds `listener` as listener for inline callback.
         UpdaterLoopThread will call listener(chat_id: int, data: str) for every new command.
         Listener will be killed after timeout_seconds
         """
-
-        if not callable(listener):
-            raise TypeError('Command listener must be callable')
 
         if timeout_seconds > 60:
             raise OverflowError('Timeout must be smaller than 1 minute')
@@ -132,7 +123,7 @@ class Bot2API:
         self._inline_listeners[chat_id][msg_id] = listener
         self.add_message_listener(self._inline_listener_def, msg_id, chat_id, timeout_seconds)
 
-    def start_poll(self, chat_id: int, question: str, answers: list) -> dict:
+    def start_poll(self, chat_id: int, question: str, answers: Iterable[str]) -> Dict[str, Any]:
         logger.logger.info('Starting poll in chat #' + str(chat_id) + ' with question "' + question + '" and options [' + ', '.join(answers) + ']')
         return self._response_prepare(self._request_prepare('sendPoll', {
             'chat_id': chat_id,
@@ -140,11 +131,11 @@ class Bot2API:
             'options': answers
         }))
 
-    def send_message(self, chat_id: int, message: str) -> dict:
+    def send_message(self, chat_id: int, message: str) -> Dict[str, Any]:
         logger.logger.info('Sending message "' + message + '" in chat #' + str(chat_id))
         return self._response_prepare(self._request_prepare('sendMessage', {'chat_id': chat_id, 'text': message}))
 
-    def send_inline_message(self, chat_id: int, message: str, options: list, listener, timeout_seconds: int = 1):
+    def send_inline_message(self, chat_id: int, message: str, options: list, listener: Callable, timeout_seconds: int = 1) -> Dict[str, Any]:
         inline_keyboard_items = []
 
         logger.logger.info('Sending inline message "' + message + '" in chat #' + str(chat_id) + '; options: ' + str(options))
@@ -167,7 +158,7 @@ class Bot2API:
 
         return resp
 
-    def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> dict:
+    def kick_chat_member(self, chat_id: int, user_id: int, until_date: int = 0) -> Dict[str, Any]:
         logger.logger.info('Kicking user with id ' + str(user_id) + ' in chat #' + str(chat_id) + ' until ' + str(until_date))
 
         return self._response_prepare(self._request_prepare('kickChatMember', {
@@ -185,7 +176,7 @@ class Bot2API:
             self._config = json.loads(f.read())
         logger.logger.info('Successfully loaded config in api')
 
-    def _request_prepare(self, command_name: str, args: dict) -> requests.Response:
+    def _request_prepare(self, command_name: str, args: Mapping[str, Any]) -> requests.Response:
         self._url_c.acquire()
         url_ = self._url + '/' + command_name
         self._url_c.release()
@@ -203,7 +194,7 @@ class Bot2API:
 
         return self._run_request(url_)
 
-    def _command_listener_def(self, update: dict, command: str, timeout_seconds: int = 300) -> None:
+    def _command_listener_def(self, update: Dict[str, Any], command: str, timeout_seconds: int = 300) -> None:
         try:
             text = update['message']['text']
             logger.logger.info('Checking update for command /' + command)
@@ -217,7 +208,7 @@ class Bot2API:
         except (NameError, KeyError, IndexError):
             pass
 
-    def _inline_listener_def(self, update: dict,  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
+    def _inline_listener_def(self, update: Mapping[str, Any],  msg_id: int, chat_id: int, timeout_seconds: int = 300) -> None:
         try:
             logger.logger.info('Checking update for inline query callback')
             query = update['callback_query']
@@ -230,7 +221,7 @@ class Bot2API:
             pass
 
     @staticmethod
-    def _response_prepare(response: requests.Response) -> dict:
+    def _response_prepare(response: requests.Response) -> Dict[str, Any]:
         logger.logger.info('Preparing response for url: ' + response.url)
 
         resp_obj = response.json()
@@ -263,7 +254,7 @@ class Bot2API:
     class _UpdaterLoopThread(Thread):
         _offset: int = 605766741  # Why not?
 
-        def __init__(self, cmd_queue: Queue, result_dict: typing.Dict, api: object):
+        def __init__(self, cmd_queue: Queue, result_dict: Mapping[int, Dict[str, Any]], api: object):
             Thread.__init__(self)
 
             logger.logger.info('Creating UpdateLoop thread instance')
@@ -272,41 +263,52 @@ class Bot2API:
             self.result_dict = result_dict
             self.api = api
 
+        def _make_request(self, id_: int, url: str) -> None:
+            logger.logger.info('Got command ' + url + ' with id ' + str(id_))
+            self.result_dict[id_] = requests.get(url)
+
+        def _update_offset(self, updates: Iterable[Mapping[str, Any]]) -> None:
+            if updates:
+                self._offset = updates[-1]['update_id'] + 1
+                logger.logger.trace('Updated offset to ' + str(self._offset))
+
+        def _run_update_listeners(self, update: Mapping[str, Any]) -> None:
+            self.api._message_listeners_c.acquire()
+            for i in range(len(self.api._message_listeners)):
+                listener, args, kwargs = self.api._message_listeners[i]
+                try:
+                    thread = self.api._MethodRunningThread(self.api, i, listener, update, *args, **kwargs)
+                    thread.setDaemon(True)
+                    thread.start()
+                except Exception as e:
+                    logger.logger.error('Got ' + str(type(e)) + ' while running listener: ' + str(e))
+            self.api._message_listeners_c.release()
+
+        def _get_updates_to_listeners(self) -> None:
+            logger.logger.trace('Sending new updates request')
+            self.api._url_c.acquire()
+            upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
+            self.api._url_c.release()
+
+            self._update_offset(upd_resp)
+
+            for update in upd_resp:
+                self._run_update_listeners(update)
+
         def run(self) -> None:
             try:
                 while True:
                     try:
-                        id_, url = self.cmd_queue.get(timeout=0.1)
-                        logger.logger.info('Got command ' + url + ' with id ' + str(id_))
-                        self.result_dict[id_] = requests.get(url)
+                        self._make_request(*self.cmd_queue.get(timeout=0.1))
                     except Empty:
-                        logger.logger.trace('Sending new updates request')
-                        self.api._url_c.acquire()
-                        upd_resp = Bot2API._response_prepare(requests.get(self.api._url + '/getUpdates?offset=' + str(self._offset)))
-                        self.api._url_c.release()
-                        if upd_resp:
-                            self._offset = upd_resp[-1]['update_id'] + 1
-                            logger.logger.trace('Updated offset to ' + str(self._offset))
-
-                        for update in upd_resp:
-                            del_ = []
-                            self.api._message_listeners_c.acquire()
-                            for i in range(len(self.api._message_listeners)):
-                                listener, args, kwargs = self.api._message_listeners[i]
-                                try:
-                                    thread = self.api._MethodRunningThread(self.api, i, listener, update, *args, **kwargs)
-                                    thread.setDaemon(True)
-                                    thread.start()
-                                except Exception as e:
-                                    logger.logger.error('Got ' + str(type(e)) + ' while running listener: ' + str(e))
-                            self.api._message_listeners_c.release()
+                        self._get_updates_to_listeners()
             except Exception as e:
                 logger.logger.fatal('Got ' + str(type(e)) + ' in UpdaterLoop thread!!! Exception: ' + str(e))
                 bugtrackerapi.report_exception(e)
                 raise e
 
     class _MethodRunningThread(Thread):
-        def __init__(self, api: object, i: int, method, *args, **kwargs):
+        def __init__(self, api: object, i: int, method: Callable, *args, **kwargs):
             Thread.__init__(self)
 
             logger.logger.info('Creating thread for running method ' + method.__name__)
@@ -331,7 +333,7 @@ class Bot2API:
                 pass  # end function here bro
 
         @staticmethod
-        def _async_raise(tid: int, exctype):
+        def _async_raise(tid: int, exctype: Any) -> None:
             if not inspect.isclass(exctype):
                 raise TypeError("Only types can be raised (not instances)")
 
@@ -345,7 +347,7 @@ class Bot2API:
                 ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
                 raise SystemError('PyThreadState_SetAsyncExc failed')
 
-        def get_id(self):
+        def get_id(self) -> int:
             if not self.isAlive():
                 logger.logger.fatal('Can\'t get thread\'s id')
                 raise threading.ThreadError('Thread is not active')
@@ -360,6 +362,6 @@ class Bot2API:
             logger.logger.fatal('Can\'t get thread\'s id')
             raise SystemError('Thread does not have id (???)')
 
-        def exit(self):
+        def exit(self) -> None:
             if self.isAlive():
                 self._async_raise(self.get_id(), InterruptedError)
